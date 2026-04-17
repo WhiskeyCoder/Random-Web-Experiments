@@ -1,4 +1,4 @@
-# 🧪 Random Web Experiments
+# Random Web Experiments
 
 A collection of random web apps, single-file projects, and experiments.
 
@@ -40,8 +40,10 @@ A fully working Flappy Bird-style game built in a single HTML file.
 - Physics + collision system
 - Particle effects
 - Local high score storage
+
+![FlappyBirds](https://github.com/WhiskeyCoder/Random-Web-Experiments/blob/main/flappybird_one_page_game/2026-04-17%2023_50_57.png)
+
 👉 Open file in browser to play  
-📄 Source: :contentReference[oaicite:0]{index=0}
 
 ---
 
