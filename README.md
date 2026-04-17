@@ -80,14 +80,6 @@ Depends on the project, but typically:
 
 ---
 
-## Author
-Built by Dean  
-- Intelligence Analyst  
-- AI Builder  
-- Founder of ShadowBrief  
-
----
-
 ## If You Like This
 Star it, fork it, or steal ideas from it.
 
