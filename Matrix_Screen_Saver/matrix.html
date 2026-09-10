@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Matrix Rain</title>
+<style>
+  html,body{height:100%;margin:0;background:#000;overflow:hidden}
+  body{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  #rain{position:fixed;inset:0;z-index:0;display:block}
+  .fx{position:fixed;inset:0;pointer-events:none}
+  /* faint CRT scanlines, barely there */
+  .scan{z-index:1;opacity:.45;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.25) 0 1px,transparent 1px 3px)}
+  /* soft vignette for depth */
+  .vig{z-index:2;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.4) 100%)}
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div class="fx scan" aria-hidden="true"></div>
+<div class="fx vig" aria-hidden="true"></div>
+
+<script>
+(() => {
+'use strict';
+
+const cv  = document.getElementById('rain');
+const ctx = cv.getContext('2d', { alpha:false });
+
+/* — glyphs: katakana first, kanji and ascii sprinkled in, like the film — */
+const KATA=[]; for(let c=0x30A1;c<=0x30FC;c++)KATA.push(c);
+const KANJI=[...'零壱弐参四五六七八九円金木水火土風雷雲光夢空海山川日月星辰王力気心時音影形義理縁結輪転生'];
+const ASCIIS='0123456789<>+=*#%&$@';
+function glyph(){
+  const r=Math.random();
+  if(r<.7)  return String.fromCharCode(KATA[(Math.random()*KATA.length)|0]);
+  if(r<.92) return KANJI[(Math.random()*KANJI.length)|0];
+  return ASCIIS[(Math.random()*ASCIIS.length)|0];
+}
+
+/* — varied greens for the trail body — */
+const GREENS=[];
+for(let i=0;i<28;i++)GREENS.push(
+  `hsl(${116+((Math.random()*34)|0)},${95+(Math.random()*5|0)}%,${36+((Math.random()*30)|0)}%)`);
+const HEAD='#eafff2';               // hot leading glyph
+const HALO='rgba(80,255,150,.3)';   // bloom around the head
+
+let W,H,dpr,F,cellW,cellH,COLS,ROWS;
+let fontCore='',fontHalo='';
+const FONT='"Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,"MS PGothic",sans-serif';
+const FADE=.065;                    // per-60fps-frame decay → the trailing fade (slightly longer trails)
+const BUF=256;                      // ring buffer of past glyphs per column
+let cols=[];
+let mx=-1e4,my=0;                   // pointer (a whisper of interactivity)
+const SPEED=matchMedia('(prefers-reduced-motion: reduce)').matches?.35:1;
+
+/* — faster fall speeds than before — */
+function makeSpeed(){return(24+Math.random()*Math.random()*96)*SPEED;}
+
+function spawn(c){
+  c.y=-(Math.random()*(ROWS+8))*cellH;          // start somewhere above the top edge
+  c.v=makeSpeed();
+  c.boost=1;
+  c.active=true;
+  c.wait=0;
+  c.prevRow=Math.floor(c.y/cellH);
+  c.spawnRow=c.prevRow;
+  /* fewer broken streaks → a fuller, denser screen */
+  c.dieAt=Math.random()<.2?c.spawnRow+10+((Math.random()*24)|0):ROWS+34;
+}
+function makeCol(i){
+  const c={x:0,tick:(Math.random()*BUF)|0,chars:new Array(BUF)};
+  for(let k=0;k<BUF;k++)c.chars[k]=glyph();
+  spawn(c);return c;
+}
+
+/* — layout / rebuild (also runs the first-paint prewarm) — */
+const rz={F:-1};
+function resize(){
+  dpr=Math.min(2,window.devicePixelRatio||1);
+  W=innerWidth;H=innerHeight;
+  cv.width=(W*dpr)|0;cv.height=(H*dpr)|0;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  /* smaller glyphs + tighter columns → much denser rain */
+  F=Math.round(Math.min(16,Math.max(12,W/130)));
+  cellW=Math.ceil(F*.75);cellH=Math.ceil(F*.95);
+  COLS=Math.ceil(W/cellW)+1;ROWS=Math.ceil(H/cellH)+1;
+  fontCore=F+'px '+FONT;fontHalo=(F*1.45|0)+'px '+FONT;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+
+  const rebuilt=rz.F!==F||!rz.built;
+  if(cols.length<COLS)for(let i=cols.length;i<COLS;i++)cols.push(makeCol(i));
+  else cols.length=COLS;
+  for(let i=0;i<COLS;i++){const c=cols[i];c.x=i*cellW+cellW/2;if(rebuilt)spawn(c);}
+  rz.F=F;rz.built=true;
+
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  if(rebuilt)for(let i=0;i<90;i++)step(1/30);   // prewarm: rain already in flight on first paint
+}
+
+/* — one simulation + render step — */
+function step(dt){
+  const fade=Math.min(.5,1-Math.pow(1-FADE,dt*60));   // refresh-rate independent decay
+  ctx.fillStyle='rgba(0,0,0,'+fade.toFixed(3)+')';
+  ctx.fillRect(0,0,W,H);
+
+  for(let i=0;i<COLS;i++){
+    const c=cols[i];
+    if(!c.active){c.wait-=dt;if(c.wait<=0)spawn(c);continue;}
+
+    /* cursor gives a column a brief speed-up and extra shimmer */
+    const near=Math.abs(c.x-mx)<90;
+    c.boost+=((near?1.5:1)-c.boost)*Math.min(1,dt*3);
+
+    c.y+=c.v*c.boost*dt;
+    const row=Math.floor(c.y/cellH);
+    if(row>c.prevRow){
+      while(c.prevRow<row){
+        c.prevRow++;
+        c.tick=(c.tick+1)%BUF;
+        const ch=glyph();c.chars[c.tick]=ch;
+        /* the cell we just left was glowing white → settle it back to green */
+        if(c.prevRow>0&&c.prevRow-1<ROWS){
+          ctx.font=fontCore;
+          ctx.fillStyle=GREENS[(Math.random()*GREENS.length)|0];
+          ctx.fillText(c.chars[(c.tick+BUF-1)%BUF],c.x,(c.prevRow-1)*cellH+cellH/2);
+        }
+      }
+    }
+
+    /* repaint the bright leading glyph every frame → sharp, hot tip */
+    if(c.prevRow>=0&&c.prevRow<ROWS){
+      const ch=c.chars[c.tick],cy=c.prevRow*cellH+cellH/2;
+      ctx.font=fontHalo;ctx.fillStyle=HALO;ctx.fillText(ch,c.x,cy);
+      ctx.font=fontCore;ctx.fillStyle=HEAD;ctx.fillText(ch,c.x,cy);
+    }
+
+    if(c.prevRow>=c.dieAt){c.active=false;c.wait=Math.random()*1.4;}
+
+    /* random glyph flickers deep in the visible trail */
+    if(Math.random()<(near?.12:.04)*dt*60){
+      const d=1+((Math.random()*30)|0),r=c.prevRow-d;
+      if(r>=0&&r<ROWS){
+        ctx.globalAlpha=.25+Math.random()*.5;
+        ctx.font=fontCore;
+        ctx.fillStyle=Math.random()<.16?'rgba(230,255,240,.9)':GREENS[(Math.random()*GREENS.length)|0];
+        ctx.fillText(glyph(),c.x,r*cellH+cellH/2);
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.1,(now-last)/1000);last=now;
+  step(dt);
+  requestAnimationFrame(frame);
+}
+
+addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY},{passive:true});
+addEventListener('mouseout',e=>{if(!e.relatedTarget)mx=-1e4});
+/* double-click → toggle fullscreen */
+addEventListener('dblclick',()=>{const d=document;d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen&&d.documentElement.requestFullscreen();});
+
+let rzT;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(resize,150)});
+
+resize();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
