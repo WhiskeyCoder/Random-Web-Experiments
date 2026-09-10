@@ -10,7 +10,7 @@ This repo exists for one reason:
 ## What This Is
 This is a dump of small projects I build when:
 - I want to test an idea quickly
-- I’m experimenting with AI-generated code
+- I’m experimenting with AI-generated code or Challenges
 - I’m bored and thinking *“can this be done in one file?”*
 - I want to prototype something before scaling it properly
 
@@ -87,7 +87,7 @@ Depends on the project, but typically:
 
 ## Future Ideas
 - More one-file games
-- Micro tools (OSINT helpers, dashboards, etc.)
+- Micro tools (helpers, dashboards, etc.)
 - AI-generated UI experiments
 - Weird “can this run in a browser?” builds
 
