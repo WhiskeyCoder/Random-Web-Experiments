@@ -43,7 +43,7 @@ A fully working Flappy Bird-style game built in a single HTML file.
 
 ![FlappyBirds](https://github.com/WhiskeyCoder/Random-Web-Experiments/blob/main/flappybird_one_page_game/2026-04-17%2023_50_57.png)
 
-👉 Open file in browser to play  
+👉 [ play here ](https://whiskeycoder.github.io/Random-Web-Experiments/flappybird_one_page_game/flappybird_one_page_game.html)  
 
 ### Outbreak Simulator (Single File Sim)
 A fully working Zombie Outbreak Simulator built in a single HTML file.
@@ -54,7 +54,7 @@ A fully working Zombie Outbreak Simulator built in a single HTML file.
 
 ![InfectionSim](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/OutBreak_Infection_Simulator/OutBreak-InfectionSim.png)
 
-👉 Open file in browser to play  
+👉 [ play here ](https://whiskeycoder.github.io/Random-Web-Experiments/OutBreak_Infection_Simulator/infection-sim.html) 
 
 ### Physics Sandbox (Single File Sim)
 A Physics sandbox in a single HTML file.
@@ -65,7 +65,7 @@ A Physics sandbox in a single HTML file.
 
 ![sandbox](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Sandbox_Physics_Sim/sandbox-physics.png)
 
-👉 Open file in browser to play  
+👉 [ play here ](https://whiskeycoder.github.io/Random-Web-Experiments/Sandbox_Physics_Sim/sandbox.html) 
 
 ---
 
