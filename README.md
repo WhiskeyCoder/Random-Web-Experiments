@@ -67,6 +67,18 @@ A Physics sandbox in a single HTML file.
 
 👉 [ play here ](https://whiskeycoder.github.io/Random-Web-Experiments/Sandbox_Physics_Sim/sandbox.html) 
 
+
+### Physics Sandbox (Single File Sim)
+A Simple Matrix Screen Saver in a single HTML file.
+- Simple
+- Dumb
+- Matrix 
+
+![Matrix](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Matrix_Screen_Saver/matrix-screen-saver.png)
+
+👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Matrix_Screen_Saver/matrix.html) 
+
+
 ---
 
 ## Philosophy
