@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Falling Sand Physics</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:#0f0f12;
+    color:#e8e8ea;
+    font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .container{
+    display:flex;
+    gap:24px;
+    align-items:flex-start;
+  }
+  .panel{
+    background:#1a1a21;
+    border:1px solid #2a2a35;
+    border-radius:12px;
+    padding:16px;
+    width:240px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  h2{margin:0 0 12px;font-size:18px}
+  .materials{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  button{
+    background:#252532;
+    color:#e8e8ea;
+    border:1px solid #3a3a4a;
+    padding:8px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  button:hover{background:#2f2f3e}
+  button.active{outline:2px solid #e9c46a;background:#2f2f3e}
+  label{display:block;margin:12px 0 6px;font-size:13px;color:#bdbdc8}
+  input[type=range]{width:100%}
+  #clear{width:100%;margin-top:12px;background:#3a2a2a}
+  canvas{
+    width:400px;
+    height:400px;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+    border:2px solid #2a2a35;
+    border-radius:8px;
+    background:#1e1e24;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+    cursor:crosshair;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="panel">
+    <h2>Falling Sand</h2>
+    <div class="materials">
+      <button data-mat="1" class="active">Sand</button>
+      <button data-mat="2">Water</button>
+      <button data-mat="3">Wall</button>
+      <button data-mat="4">Acid</button>
+    </div>
+    <label>Brush size <span id="brushVal">2</span></label>
+    <input type="range" id="brush" min="1" max="8" value="2">
+    <button id="clear">Clear Canvas</button>
+  </div>
+  <canvas id="canvas" width="400" height="400"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = 100;
+const H = 100;
+const CELL = 4;
+const EMPTY = 0;
+const SAND = 1;
+const WATER = 2;
+const WALL = 3;
+const ACID = 4;
+
+const colors = [];
+colors[EMPTY] = '#1e1e24';
+colors[SAND]  = '#e9c46a';
+colors[WATER] = '#457b9d';
+colors[WALL]  = '#6c757d';
+colors[ACID]  = '#55ff33';
+
+let grid = new Uint8Array(W*H);
+let currentMat = SAND;
+let brushSize = 2;
+
+const brushInput = document.getElementById('brush');
+const brushVal = document.getElementById('brushVal');
+brushInput.addEventListener('input', e=>{
+  brushSize = parseInt(e.target.value);
+  brushVal.textContent = brushSize;
+});
+
+document.querySelectorAll('[data-mat]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-mat]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMat = parseInt(btn.dataset.mat);
+  });
+});
+
+document.getElementById('clear').addEventListener('click', ()=>{
+  grid.fill(EMPTY);
+});
+
+let isDrawing = false;
+canvas.addEventListener('mousedown', e=>{isDrawing=true; paint(e);});
+canvas.addEventListener('mousemove', e=>{if(isDrawing) paint(e);});
+window.addEventListener('mouseup', ()=>isDrawing=false);
+
+function gridPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / CELL);
+  const y = Math.floor((e.clientY - rect.top) / CELL);
+  return [x,y];
+}
+function paint(e){
+  const [gx,gy] = gridPos(e);
+  const r = brushSize;
+  for(let dy=-r; dy<=r; dy++){
+    for(let dx=-r; dx<=r; dx++){
+      if(dx*dx+dy*dy > r*r) continue;
+      const x = gx+dx, y = gy+dy;
+      if(x<0||x>=W||y<0||y>=H) continue;
+      grid[y*W+x] = currentMat;
+    }
+  }
+}
+
+function update(){
+  for(let y=H-2; y>=0; y--){
+    for(let x=0; x<W; x++){
+      const idx = y*W + x;
+      const type = grid[idx];
+      if(type===EMPTY || type===WALL) continue;
+
+      if(type===SAND){
+        const belowIdx = (y+1)*W + x;
+        const belowType = grid[belowIdx];
+        if(belowType===EMPTY){
+          grid[belowIdx]=SAND; grid[idx]=EMPTY;
+          continue;
+        }
+        if(belowType===WATER || belowType===ACID){
+          grid[belowIdx]=SAND; grid[idx]=belowType;
+          continue;
+        }
+        // diagonal
+        const dirs = [-1,1];
+        if(Math.random()<0.5) dirs.reverse();
+        for(const d of dirs){
+          const nx = x+d;
+          if(nx<0||nx>=W) continue;
+          const diagIdx = (y+1)*W + nx;
+          const diagType = grid[diagIdx];
+          if(diagType===EMPTY){
+            grid[diagIdx]=SAND; grid[idx]=EMPTY;
+            break;
+          }
+          if(diagType===WATER || diagType===ACID){
+            grid[diagIdx]=SAND; grid[idx]=diagType;
+            break;
+          }
+        }
+        continue;
+      }
+
+      if(type===ACID){
+        // dissolve contact
+        const neigh = [[1,0],[-1,0],[0,1],[0,-1]];
+        for(const [dx,dy] of neigh){
+          const nx=x+dx, ny=y+dy;
+          if(nx<0||nx>=W||ny<0||ny>=H) continue;
+          const nIdx = ny*W + nx;
+          const nType = grid[nIdx];
+          if(nType===SAND || nType===WALL){
+            grid[idx]=EMPTY;
+            grid[nIdx]=EMPTY;
+            // dissolved, skip movement
+            // break out
+            // we can continue to next cell
+            // use a flag
+            // break loop by using goto via flag
+            // just continue outer
+            // we need to stop processing this cell
+            // set a flag
+            // easier: return to next iteration by using a marker
+            // We'll just skip movement via flag
+            // Using a variable
+          }
+        }
+        // Actually we need proper skip. Re-check with flag.
+        // Let's redo acid handling correctly below.
+      }
+
+      if(type===WATER || type===ACID){
+        const belowIdx = (y+1)*W + x;
+        const belowType = grid[belowIdx];
+        if(belowType===EMPTY){
+          grid[belowIdx]=type; grid[idx]=EMPTY;
+          continue;
+        }
+        // diagonal
+        const dirs = [-1,1];
+        if(Math.random()<0.5) dirs.reverse();
+        let moved=false;
+        for(const d of dirs){
+          const nx=x+d;
+          if(nx<0||nx>=W) continue;
+          const diagIdx=(y+1)*W+nx;
+          if(grid[diagIdx]===EMPTY){
+            grid[diagIdx]=type; grid[idx]=EMPTY;
+            moved=true; break;
+          }
+        }
+        if(!moved){
+          const hDirs=[-1,1];
+          if(Math.random()<0.5) hDirs.reverse();
+          for(const d of hDirs){
+            const nx=x+d;
+            if(nx<0||nx>=W) continue;
+            const sideIdx=y*W+nx;
+            if(grid[sideIdx]===EMPTY){
+              grid[sideIdx]=type; grid[idx]=EMPTY;
+              moved=true; break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Acid dissolve pass – done separately to avoid order issues
+  for(let y=H-1; y>=0; y--){
+    for(let x=0; x<W; x++){
+      const idx=y*W+x;
+      if(grid[idx]!==ACID) continue;
+      const neigh=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(const [dx,dy] of neigh){
+        const nx=x+dx, ny=y+dy;
+        if(nx<0||nx>=W||ny<0||ny>=H) continue;
+        const nIdx=ny*W+nx;
+        const nType=grid[nIdx];
+        if(nType===SAND || nType===WALL){
+          grid[idx]=EMPTY;
+          grid[nIdx]=EMPTY;
+          break;
+        }
+      }
+    }
+  }
+}
+
+// The above update has a bug with acid dissolve inside loop.
+// Fix by moving dissolve out and re-running movement correctly.
+// Let's rewrite update cleanly:
+
+function update(){
+  // first dissolve acids
+  for(let y=H-1; y>=0; y--){
+    for(let x=0; x<W; x++){
+      const idx=y*W+x;
+      if(grid[idx]!==ACID) continue;
+      const neigh=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(const [dx,dy] of neigh){
+        const nx=x+dx, ny=y+dy;
+        if(nx<0||nx>=W||ny<0||ny>=H) continue;
+        const nIdx=ny*W+nx;
+        const nType=grid[nIdx];
+        if(nType===SAND || nType===WALL){
+          grid[idx]=EMPTY;
+          grid[nIdx]=EMPTY;
+          break;
+        }
+      }
+    }
+  }
+
+  for(let y=H-2; y>=0; y--){
+    for(let x=0; x<W; x++){
+      const idx=y*W+x;
+      const type=grid[idx];
+      if(type===EMPTY || type===WALL) continue;
+
+      if(type===SAND){
+        const belowIdx=(y+1)*W+x;
+        const belowType=grid[belowIdx];
+        if(belowType===EMPTY){
+          grid[belowIdx]=SAND; grid[idx]=EMPTY; continue;
+        }
+        if(belowType===WATER || belowType===ACID){
+          grid[belowIdx]=SAND; grid[idx]=belowType; continue;
+        }
+        const dirs=[-1,1];
+        if(Math.random()<0.5) dirs.reverse();
+        for(const d of dirs){
+          const nx=x+d;
+          if(nx<0||nx>=W) continue;
+          const diagIdx=(y+1)*W+nx;
+          const diagType=grid[diagIdx];
+          if(diagType===EMPTY){
+            grid[diagIdx]=SAND; grid[idx]=EMPTY; break;
+          }
+          if(diagType===WATER || diagType===ACID){
+            grid[diagIdx]=SAND; grid[idx]=diagType; break;
+          }
+        }
+        continue;
+      }
+
+      if(type===WATER || type===ACID){
+        const belowIdx=(y+1)*W+x;
+        if(grid[belowIdx]===EMPTY){
+          grid[belowIdx]=type; grid[idx]=EMPTY; continue;
+        }
+        const dirs=[-1,1];
+        if(Math.random()<0.5) dirs.reverse();
+        let moved=false;
+        for(const d of dirs){
+          const nx=x+d;
+          if(nx<0||nx>=W) continue;
+          const diagIdx=(y+1)*W+nx;
+          if(grid[diagIdx]===EMPTY){
+            grid[diagIdx]=type; grid[idx]=EMPTY; moved=true; break;
+          }
+        }
+        if(!moved){
+          const hDirs=[-1,1];
+          if(Math.random()<0.5) hDirs.reverse();
+          for(const d of hDirs){
+            const nx=x+d;
+            if(nx<0||nx>=W) continue;
+            const sideIdx=y*W+nx;
+            if(grid[sideIdx]===EMPTY){
+              grid[sideIdx]=type; grid[idx]=EMPTY; moved=true; break;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function render(){
+  ctx.fillStyle = colors[EMPTY];
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let y=0; y<H; y++){
+    const rowOff = y*CELL;
+    for(let x=0; x<W; x++){
+      const t = grid[y*W+x];
+      if(t===EMPTY) continue;
+      ctx.fillStyle = colors[t];
+      ctx.fillRect(x*CELL, rowOff, CELL, CELL);
+    }
+  }
+}
+
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
