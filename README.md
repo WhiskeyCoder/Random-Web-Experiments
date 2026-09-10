@@ -79,6 +79,17 @@ A Simple Matrix Screen Saver in a single HTML file.
 👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Matrix_Screen_Saver/matrix.html) 
 
 
+### Synapse (Single File Sim)
+A real Time Feed Forward Neural Network Training Visualizer.
+- It's a real network, not a fake one
+- Dumb
+- Machine Learning Training Visualizer 
+
+![Synapse](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Synaps/Synapsepng.png)
+
+👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Synaps/synaps.html) 
+
+
 ---
 
 ## Philosophy
