@@ -45,6 +45,19 @@ A fully working Flappy Bird-style game built in a single HTML file.
 
 👉 Open file in browser to play  
 
+### Outbreak Simulator (Single File Sim)
+A fully working Zombie Outbreak Simulator built in a single HTML file.
+- Random Infection Start Point
+- Randomised Cities
+- Completely Random Interactions
+- Chaos Theory As a Zombie Infection Simulation
+
+![InfectionSim](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/OutBreak_Infection_Simulator/OutBreak-InfectionSim.png)
+
+👉 Open file in browser to play  
+
+
+
 ---
 
 ## Philosophy
