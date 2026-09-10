@@ -56,7 +56,16 @@ A fully working Zombie Outbreak Simulator built in a single HTML file.
 
 👉 Open file in browser to play  
 
+### Physics Sandbox (Single File Sim)
+A Physics sandbox in a single HTML file.
+- Working Sand Physics
+- Working Water liquid Physics
+- Working Wall building
+- Working Acid liquid Physics
 
+![sandbox](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Sandbox_Physics_Sim/sandbox-physics.png)
+
+👉 Open file in browser to play  
 
 ---
 
