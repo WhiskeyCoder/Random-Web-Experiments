@@ -90,6 +90,17 @@ A real Time Feed Forward Neural Network Training Visualizer.
 👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Synaps/synaps.html) 
 
 
+### Pet Rock (Single File Sim)
+A real Time Pet Rock monitor for Jeff The Pet Rock.
+- Its a Rock
+- The Rocks Name is Jeff
+- Jeff is a Rock
+  
+![Jeff The Rock](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/PetRock/jeff.png)
+
+👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/PetRock/jeff.html) 
+
+
 ---
 
 ## Philosophy
