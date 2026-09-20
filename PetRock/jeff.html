@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEFF — Pet Rock Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1210; --panel:#0f1c18; --panel-2:#13251f;
+    --line:rgba(120,200,170,.14); --line-strong:rgba(120,200,170,.30);
+    --ink:#e9f6ef; --dim:#8aa79c; --faint:#5b7a6f;
+    --green:#5fe3a1; --amber:#ffcf5c; --red:#ff6b5e; --cyan:#6fd0ff;
+    --mono:'Space Mono',ui-monospace,monospace;
+    --disp:'Chakra Petch',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:var(--disp); color:var(--ink); background:var(--bg);
+    display:flex; flex-direction:column; overflow:hidden; line-height:1.35;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .ambient{position:fixed;inset:0;z-index:-3;background:
+    radial-gradient(120% 90% at 80% -10%, #14352a 0%, transparent 55%),
+    radial-gradient(120% 120% at 0% 110%, #10261f 0%, transparent 55%),
+    linear-gradient(180deg,#0b1512,#070d0b);}
+  .grid-bg{position:fixed;inset:0;z-index:-2;background-image:
+    linear-gradient(var(--line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:38px 38px; opacity:.45;}
+  .scan{position:fixed;inset:0;z-index:-1;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);opacity:.35}
+
+  .topbar{
+    flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:8px 14px; border-bottom:1px solid var(--line-strong);
+    background:linear-gradient(180deg,rgba(15,28,24,.95),rgba(10,18,16,.85));
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .mark{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,#2a4a3e,#0c1714);border:1px solid var(--line-strong)}
+  .mark svg{width:22px;height:22px}
+  .brand h1{font-size:22px;margin:0;letter-spacing:.16em;font-weight:700;line-height:1}
+  .brand p{margin:1px 0 0;font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+  .status{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px}
+  .rec{display:flex;align-items:center;gap:6px;color:var(--red);letter-spacing:.14em}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:blink 1.4s steps(1) infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .clock{font-size:18px;letter-spacing:.08em;color:var(--green)}
+  .ticker{color:var(--faint);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sig{display:flex;align-items:flex-end;gap:2px;height:16px}
+  .sig i{width:3px;background:var(--faint);border-radius:1px;transition:height .3s}
+
+  .dash{
+    flex:1; min-height:0;
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    grid-template-rows:minmax(0,1.05fr) minmax(0,.95fr) minmax(0,.72fr);
+    gap:8px;
+    padding:8px 10px 6px;
+  }
+  @media(max-width:1100px){
+    body{overflow:auto;height:auto;min-height:100vh}
+    .dash{grid-template-columns:1fr 1fr;grid-template-rows:auto;min-height:auto}
+    .span-cam{grid-column:1/-1!important}
+  }
+
+  .panel{
+    position:relative; min-height:0; display:flex; flex-direction:column;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line); border-radius:5px; padding:10px 11px; overflow:hidden;
+  }
+  .panel::before,.panel::after{content:"";position:absolute;width:10px;height:10px;border-color:var(--green);opacity:.45}
+  .panel::before{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid}
+  .panel::after{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid}
+  .phead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex:none}
+  .ptitle{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .ptag{font-family:var(--mono);font-size:9px;letter-spacing:.12em;padding:2px 6px;border-radius:3px;border:1px solid var(--line-strong);color:var(--faint)}
+  .pbody{flex:1;min-height:0;overflow:auto}
+  .pbody::-webkit-scrollbar{width:6px;height:6px}
+  .pbody::-webkit-scrollbar-thumb{background:#1c3a30;border-radius:3px}
+
+  .span-cam{grid-column:1/5;grid-row:1}
+  .span-vitals{grid-column:5/9;grid-row:1}
+  .span-env{grid-column:9/13;grid-row:1}
+  .span-move{grid-column:1/5;grid-row:2}
+  .span-tele{grid-column:5/9;grid-row:2}
+  .span-mood{grid-column:9/13;grid-row:2}
+  .span-log{grid-column:1/5;grid-row:3}
+  .span-act{grid-column:5/9;grid-row:3}
+  .span-bill{grid-column:9/13;grid-row:3}
+
+  .cctv{position:relative;width:100%;height:100%;min-height:120px;background:#05090a;border-radius:4px;overflow:hidden}
+  .cctv::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:6;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+  .cctv svg{position:absolute;inset:0;width:100%;height:100%}
+  .cam-label{position:absolute;z-index:7;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:#cfeee0;text-shadow:0 0 6px #000}
+  .cam-tl{top:8px;left:10px;display:flex;align-items:center;gap:5px}
+  .cam-tr{top:8px;right:10px}
+  .cam-bl{bottom:8px;left:10px}
+  .cam-br{bottom:8px;right:10px;text-align:right;line-height:1.4}
+  .rec-dot{width:7px;height:7px;border-radius:50%;background:#ff3b30;animation:blink 1.2s steps(1) infinite}
+  .cam-br b{color:var(--green)}
+
+  .rock{transform-box:view-box;transform-origin:50% 62%;transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+  .cctv:hover .rock{transform:scale(1.015) rotate(-.4deg)}
+  .rock.patted{animation:patt .42s cubic-bezier(.34,1.7,.64,1)}
+  @keyframes patt{0%{transform:translateY(0)}30%{transform:translateY(-7px) scale(1.04)}60%{transform:translateY(2px)}100%{transform:translateY(0)}}
+  .rock.shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
+
+  .stat-hero{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .big-num{font-family:var(--mono);font-weight:700;font-size:clamp(28px,4vw,42px);line-height:1;color:var(--green)}
+  .big-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+  .cell{border:1px solid var(--line);border-radius:4px;padding:6px 7px;background:rgba(95,227,161,.03)}
+  .cell .k{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .cell .v{font-family:var(--mono);font-weight:700;font-size:12px;margin-top:3px}
+
+  .sensor-list{display:flex;flex-direction:column;gap:5px;font-family:var(--mono);font-size:11px}
+  .sensor-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .sensor-row:last-child{border-bottom:none}
+  .sensor-row span{color:var(--dim)}
+  .sensor-row b{font-weight:700;color:var(--ink)}
+  .sensor-row .ok{color:var(--green)}.sensor-row .warn{color:var(--amber)}.sensor-row .bad{color:var(--red)}
+
+  .meter{margin-bottom:8px}
+  .meter:last-child{margin-bottom:0}
+  .mrow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;margin-bottom:4px}
+  .mrow b{color:var(--dim);letter-spacing:.06em;text-transform:uppercase;font-weight:400}
+  .bar{height:7px;border-radius:4px;background:#0a1310;overflow:hidden;border:1px solid var(--line)}
+  .fill{height:100%;width:0;border-radius:4px;transition:width .6s ease;background:linear-gradient(90deg,var(--green),#a6f4c9)}
+  .fill.amber{background:linear-gradient(90deg,#ffcf5c,#ffe8a3)}
+  .fill.red{background:linear-gradient(90deg,#ff6b5e,#ffb0a6)}
+  .fill.cyan{background:linear-gradient(90deg,#6fd0ff,#b8e8ff)}
+
+  .graph-wrap{position:relative;height:100%;min-height:80px}
+  #graph{width:100%;height:100%;min-height:80px;display:block}
+  .ggrid line{stroke:var(--line);stroke-width:1}
+  .gaxis text{fill:var(--faint);font-family:var(--mono);font-size:8px}
+  .garea{fill:url(#ga)}
+  .gline{fill:none;stroke:var(--green);stroke-width:2}
+  .gdot{fill:#eafff3;stroke:var(--green);stroke-width:1.5;transition:r .2s}
+  .gdot.flash{r:5;filter:drop-shadow(0 0 6px var(--green))}
+  .sensor-row.pulse b{animation:envFlash .8s ease}
+  @keyframes envFlash{0%,100%{opacity:1}50%{opacity:.55}}
+  .glabel{position:absolute;top:4px;left:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--dim)}
+
+  .tele-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .tele-chip{border:1px solid var(--line);border-radius:4px;padding:6px;background:rgba(0,0,0,.15)}
+  .tele-chip .k{font-family:var(--mono);font-size:8px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+  .tele-chip .v{font-family:var(--mono);font-size:13px;font-weight:700;margin-top:2px}
+
+  .mood-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .mood-row .emo{font-size:36px;line-height:1}
+  .mood-row .w{font-family:var(--mono);font-weight:700;font-size:15px}
+  .mood-row .n{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;align-content:start}
+  .btn{
+    font-family:var(--disp);font-weight:600;font-size:11px;color:var(--ink);text-align:left;cursor:pointer;
+    background:linear-gradient(180deg,#173029,#10241d);border:1px solid var(--line-strong);border-radius:4px;padding:7px 8px;
+    transition:border-color .15s,box-shadow .15s;display:flex;gap:6px;align-items:flex-start;
+  }
+  .btn:hover{border-color:var(--green);box-shadow:0 0 12px rgba(95,227,161,.15)}
+  .btn .ico{font-size:14px;flex:none}
+  .btn .sub{display:block;font-family:var(--mono);font-weight:400;font-size:8px;color:var(--faint);margin-top:1px}
+  .btn.primary{border-color:#2f7d5b}
+
+  .log{font-family:var(--mono);font-size:10.5px}
+  .entry{display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .entry .t{color:var(--faint);flex:none;font-size:9px;min-width:52px}
+  .entry .lvl{flex:none;font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 4px;border-radius:2px;border:1px solid;line-height:1.2}
+  .entry .m{color:#cfeee0;flex:1;min-width:0}
+  .entry.lvl-debug .lvl{border-color:var(--faint);color:var(--faint)}
+  .entry.lvl-info .lvl{border-color:var(--cyan);color:var(--cyan)}
+  .entry.lvl-warn .lvl{border-color:var(--amber);color:var(--amber)}
+  .entry.lvl-warn .m{color:var(--amber)}
+  .entry.lvl-crit .lvl{border-color:var(--red);color:var(--red)}
+  .entry.lvl-crit .m{color:var(--red)}
+  .entry.lvl-ok .lvl{border-color:var(--green);color:var(--green)}
+  .entry.lvl-ok .m{color:var(--green)}
+
+  .alert-list{font-family:var(--mono);font-size:10px}
+  .alert-item{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:6px;align-items:flex-start}
+  .alert-item .sev{flex:none;font-size:8px;padding:2px 4px;border-radius:2px;border:1px solid}
+  .sev.info{border-color:var(--cyan);color:var(--cyan)}
+  .sev.low{border-color:var(--green);color:var(--green)}
+  .sev.med{border-color:var(--amber);color:var(--amber)}
+
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(4,9,8,.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px}
+  .overlay.open{display:flex}
+  .modal{width:min(480px,100%);background:linear-gradient(180deg,#13251f,#0e1c17);border:1px solid var(--line-strong);border-radius:6px;padding:18px}
+  .modal h3{margin:0 0 4px;font-size:17px}
+  .modal .msub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:12px;text-transform:uppercase}
+  textarea{width:100%;background:#0a1310;border:1px solid var(--line-strong);border-radius:5px;color:var(--ink);font-family:var(--mono);font-size:13px;padding:10px;resize:none}
+  .mrow-btns{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+  .btn-sm{font-family:var(--disp);font-weight:600;font-size:13px;padding:7px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--line-strong);background:#173029;color:var(--ink)}
+  .btn-sm.ghost{background:transparent}
+  .typing{display:flex;gap:4px;padding:4px 0}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--dim);animation:bounce 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
+
+  .toasts{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;width:min(380px,92vw)}
+  .toast{font-family:var(--mono);font-size:11px;padding:9px 12px;border-radius:4px;background:#10241d;border:1px solid var(--line-strong);border-left:3px solid var(--green);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .toast.warn{border-left-color:var(--amber)}
+  .toast.bad{border-left-color:var(--red)}
+
+  footer{flex:none;text-align:center;font-family:var(--mono);font-size:9px;color:var(--faint);padding:4px 10px 8px}
+  .reset{background:none;border:none;color:var(--red);cursor:pointer;font-family:var(--mono);text-decoration:underline;font-size:9px}
+</style>
+</head>
+<body>
+<div class="ambient"></div><div class="grid-bg"></div><div class="scan"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 16c-1.5-3 .5-7 3-8s5-1 7 1 3 5 1 8-9 3-11-1z" stroke="#5fe3a1" stroke-width="1.4"/></svg>
+    </div>
+    <div>
+      <h1>JEFF</h1>
+      <p>Pet Rock · NOC Dashboard · Unit 07</p>
+    </div>
+  </div>
+  <div class="status">
+    <span class="rec"><span class="dot"></span>REC</span>
+    <span class="clock" id="clock">--:--:--</span>
+    <span class="ticker" id="ticker">All systems rocky.</span>
+    <span class="sig" id="sig" title="uplink"><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+</header>
+
+<main class="dash">
+  <section class="panel span-cam">
+    <div class="phead"><span class="ptitle">Live Habitat Feed</span><span class="ptag" id="camStatus">LOCKED ON TARGET</span></div>
+    <div class="pbody" style="padding:0">
+    <div class="cctv" id="cctv">
+      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-label="CCTV feed of Jeff the rock">
+        <defs>
+          <radialGradient id="rockGrad" cx="42%" cy="34%" r="75%">
+            <stop offset="0%" stop-color="#8a9aa6"/><stop offset="45%" stop-color="#5c6b76"/>
+            <stop offset="100%" stop-color="#2f3a42"/>
+          </radialGradient>
+          <linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5fe3a1" stop-opacity=".35"/><stop offset="100%" stop-color="#5fe3a1" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="200" cy="248" rx="96" ry="16" fill="#000" opacity=".45"/>
+        <g class="rock" id="rock">
+          <path d="M118 232 C96 214 92 176 108 150 C120 128 150 112 182 110
+                   C214 108 250 116 272 138 C292 158 296 196 282 220
+                   C268 244 236 250 200 250 C164 250 138 248 118 232 Z"
+                fill="url(#rockGrad)" stroke="#1c252b" stroke-width="2.5"/>
+          <ellipse cx="160" cy="150" rx="34" ry="20" fill="#fff" opacity=".10"/>
+          <circle cx="150" cy="205" r="7" fill="#2f3a42" opacity=".5"/>
+          <circle cx="238" cy="196" r="5" fill="#2f3a42" opacity=".45"/>
+          <circle cx="205" cy="222" r="4" fill="#2f3a42" opacity=".4"/>
+          <path d="M138 176 q10 -6 20 0" stroke="#2f3a42" stroke-width="2" fill="none" opacity=".4"/>
+          </g>
+          <g id="particles"></g>
+      </svg>
+      <div class="cam-label cam-tl"><span class="rec-dot"></span>CAM 07 · JEFF'S HABITAT</div>
+      <div class="cam-label cam-tr" id="camDate">--/--/----</div>
+        <div class="cam-label cam-bl" id="camSignal">SIGNAL: STABLE</div>
+        <div class="cam-label cam-br">UPTIME<br><b id="camUptime">0d 00:00:00</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel span-vitals">
+    <div class="phead"><span class="ptitle">Rock Vitals</span><span class="ptag" id="vitalTag">NOMINAL</span></div>
+    <div class="pbody">
+        <div class="stat-hero">
+          <span class="big-num" id="petCount">0</span>
+        <span class="big-lbl">lifetime pets<br><span id="petRate" style="color:var(--faint)">0.00 pets/hr</span></span>
+      </div>
+      <div class="mini-grid">
+        <div class="cell"><div class="k">Rock Age</div><div class="v" style="color:var(--amber);font-size:11px">4.5B yr</div></div>
+        <div class="cell"><div class="k">Stillness</div><div class="v" id="stillness">99.98%</div></div>
+        <div class="cell"><div class="k">Heart Rate</div><div class="v" style="color:var(--red)">0 BPM</div></div>
+        <div class="cell"><div class="k">Owner Since</div><div class="v" id="ownerSince" style="font-size:10px">—</div></div>
+        <div class="cell"><div class="k">Last Petted</div><div class="v" id="lastPet" style="font-size:10px">never</div></div>
+        <div class="cell"><div class="k">Steps Today</div><div class="v" id="steps">0</div></div>
+        <div class="cell"><div class="k">24h Movement</div><div class="v" id="move24">0.00 mm</div></div>
+        <div class="cell"><div class="k">Mohs Hardness</div><div class="v">6.5</div></div>
+        <div class="cell"><div class="k">Total Spent</div><div class="v" id="totalCost" style="color:var(--green)">$0</div></div>
+        </div>
+        </div>
+      </section>
+
+  <section class="panel span-env">
+    <div class="phead"><span class="ptitle">Habitat Sensors</span><span class="ptag" id="envTag">AUTO-CAL</span></div>
+    <div class="pbody sensor-list" id="envSensors"></div>
+  </section>
+
+  <section class="panel span-move">
+    <div class="phead"><span class="ptitle">Displacement Telemetry</span><span class="ptag" id="moveTag">0.00 mm / 24h</span></div>
+    <div class="pbody graph-wrap">
+      <span class="glabel">MM · LAST 24 HOURS (HOURLY)</span>
+      <svg id="graph" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+        </div>
+      </section>
+
+  <section class="panel span-tele">
+    <div class="phead"><span class="ptitle">Deep Rock Telemetry</span><span class="ptag">LIVE</span></div>
+    <div class="pbody tele-grid" id="teleGrid"></div>
+      </section>
+
+  <section class="panel span-mood">
+    <div class="phead"><span class="ptitle">Sentiment &amp; Cognition</span><span class="ptag" id="cogTag">COGNITION OFFLINE</span></div>
+    <div class="pbody">
+      <div class="mood-row">
+        <div class="emo" id="moodEmoji">😐</div>
+          <div>
+          <div class="w" id="moodWord">Unbothered</div>
+          <div class="n" id="moodNote">No emotional telemetry. Subject is a rock.</div>
+        </div>
+      </div>
+      <div class="meter"><div class="mrow"><b>Mood variance</b><span id="moodVal">0.00%</span></div><div class="bar"><div class="fill amber" id="moodBar" style="width:0%"></div></div></div>
+      <div class="meter"><div class="mrow"><b>Awareness</b><span id="cogA">0%</span></div><div class="bar"><div class="fill cyan" id="cogABar"></div></div></div>
+        <div class="meter"><div class="mrow"><b>Memory</b><span id="cogM">0%</span></div><div class="bar"><div class="fill amber" id="cogMBar"></div></div></div>
+        <div class="meter"><div class="mrow"><b>Emotional Range</b><span id="cogE">0%</span></div><div class="bar"><div class="fill red" id="cogEBar"></div></div></div>
+      <div class="meter"><div class="mrow"><b>Existential Dread</b><span id="dreadVal">0%</span></div><div class="bar"><div class="fill" id="dreadBar" style="width:0%"></div></div></div>
+        </div>
+      </section>
+
+  <section class="panel span-log">
+    <div class="phead"><span class="ptitle">Activity Log</span><button class="btn-sm ghost" id="clearLog" style="font-size:9px;padding:3px 8px">CLEAR</button></div>
+    <div class="pbody log" id="log"></div>
+  </section>
+
+  <section class="panel span-act">
+    <div class="phead"><span class="ptitle">Operator Actions</span><span class="ptag">LIVE</span></div>
+    <div class="pbody actions" id="actions"></div>
+      </section>
+
+  <section class="panel span-bill">
+    <div class="phead"><span class="ptitle">Alerts &amp; Billing</span><span class="ptag" id="monthlyTotal">$109.49/mo</span></div>
+    <div class="pbody">
+      <div class="alert-list" id="alerts"></div>
+      <div style="margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--faint);border-top:1px dashed var(--line);padding-top:6px">
+        <div style="display:flex;justify-content:space-between"><span>Rock Dust (unused)</span><b id="dustInv">0 bags</b></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px"><span>CCTV egress</span><b id="cctvCost">$3.00</b></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>JEFF PET ROCK MONITORING · v4.5B · local persistence · <button class="reset" id="reset">reset all data</button></footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="mTitle">Modal</h3>
+    <p class="msub" id="mSub"></p>
+    <div id="mBody"></div>
+    <div class="mrow-btns" id="mBtns"></div>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+  const KEY = "jeff_petrock_v2";
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const pad = n => String(n).padStart(2, "0");
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  function defaults() {
+    const now = Date.now();
+    const movement = Array(24).fill(0).map(() => +(Math.random() * 0.02).toFixed(4));
+    return {
+      petCount: 0, lastPet: null, ownerSince: now,
+      log: [], questionsAsked: 0, callsBooked: 0, checksDone: 0,
+      photos: 0, musicPlays: 0, cleans: 0, sleepAttempts: 0, dustBought: 0,
+      totalCost: 109.49, movement, totalMovementMm: 0,
+      envBase: {
+        tempC: 19.4, humidity: 41, lux: 312, vibration: 0.001,
+        mossPct: 0.003, wifiPkts: 12840, grassEnvy: false, lavaRisk: 0.0001
+      },
+      habitatPulse: { tempC: 0, humidity: 0, lux: 0, vibration: 0, until: 0, duration: 0 },
+      env: {
+        tempC: 19.4, humidity: 41, lux: 312, vibration: 0.001,
+        mossPct: 0.003, wifiPkts: 12840, grassEnvy: false, lavaRisk: 0.0001
+      },
+      stillness: 99.98, stepsToday: 0, stepsDayKey: dayKey(now),
+      lastMoveAt: 0,
+      sessionStart: now, lastTick: now, tickerIdx: 0
+    };
+  }
+
+  function dayKey(t) {
+    const d = new Date(t);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY));
+      const s = Object.assign(defaults(), d || {});
+      if (!Array.isArray(s.movement) || s.movement.length !== 24) s.movement = defaults().movement;
+      if (!s.envBase) s.envBase = s.env ? Object.assign({}, s.env) : defaults().envBase;
+      if (!s.habitatPulse) s.habitatPulse = defaults().habitatPulse;
+      const today = dayKey(Date.now());
+      if (s.stepsDayKey !== today) { s.stepsToday = 0; s.stepsDayKey = today; }
+      return s;
+    } catch (e) { return defaults(); }
+  }
+
+  let S = load();
+  syncEnv();
+  function save() { localStorage.setItem(KEY, JSON.stringify(S)); }
+
+  function pulseFactor() {
+    const p = S.habitatPulse;
+    const now = Date.now();
+    if (!p.until || now >= p.until || p.duration <= 0) return 0;
+    return (p.until - now) / p.duration;
+  }
+
+  function syncEnv() {
+    const b = S.envBase;
+    const p = S.habitatPulse;
+    const t = pulseFactor();
+    S.env.tempC = b.tempC + p.tempC * t;
+    S.env.humidity = clamp(b.humidity + p.humidity * t, 20, 78);
+    S.env.lux = clamp(b.lux + p.lux * t, 40, 980);
+    S.env.vibration = clamp(b.vibration + p.vibration * t, 0.0005, 0.12);
+    S.env.mossPct = b.mossPct;
+    S.env.wifiPkts = b.wifiPkts;
+    S.env.grassEnvy = b.grassEnvy;
+    S.env.lavaRisk = b.lavaRisk;
+    const tag = $("envTag");
+    if (tag) tag.textContent = t > 0.08 ? "DISTURBANCE" : "AUTO-CAL";
+  }
+
+  function disturbHabitat(profile) {
+    const duration = profile.ms || 14000;
+    S.habitatPulse = {
+      tempC: profile.tempC || 0,
+      humidity: profile.humidity || 0,
+      lux: profile.lux || 0,
+      vibration: profile.vibration || 0,
+      until: Date.now() + duration,
+      duration
+    };
+    syncEnv();
+    save();
+  }
+
+  function bumpMovement(mm, reason) {
+    const amount = +mm.toFixed(4);
+    if (amount <= 0) return;
+    S.totalMovementMm += amount;
+    S.movement[23] = +(S.movement[23] + amount).toFixed(4);
+    S.stillness = clamp(99.999 - S.totalMovementMm * 0.8, 94, 99.999);
+    S.lastMoveAt = Date.now();
+    if (reason) addLog(reason + " (+ " + amount.toFixed(3) + " mm)", amount > 0.05 ? "WARN" : "INFO");
+    save();
+  }
+
+  function rollHourIfNeeded() {
+    const now = Date.now();
+    const hoursSince = (now - S.lastTick) / 3600000;
+    if (hoursSince >= 1) {
+      const shifts = Math.min(24, Math.floor(hoursSince));
+      for (let i = 0; i < shifts; i++) {
+        S.movement.shift();
+        S.movement.push(+(Math.random() * 0.015).toFixed(4));
+      }
+      S.lastTick = now;
+      save();
+    }
+  }
+
+  const TICKERS = [
+    "Jeff has not blinked. He has no eyes.",
+    "Heartbeat: none. As expected.",
+    "Grass nearby is jealous.",
+    "Rock is holding position.",
+    "No thoughts. Head empty. Head is rock.",
+    "Possible movement: it was a shadow.",
+    "Moss growth: statistically irrelevant.",
+    "Jeff declined today's agenda. Reason: is a rock.",
+    "Room temperature fine. Rock temperature: also rock.",
+    "Still monitoring the same rock. Still a rock."
+  ];
+
+  const RANDOM_EVENTS = [
+    { lvl: "DEBUG", m: "Rock heartbeat: none. As expected." },
+    { lvl: "DEBUG", m: "Neural activity: 0 µV. Baseline unchanged since the Mesozoic." },
+    { lvl: "INFO", m: "Pigeon bumped the camera. Rock did not move. Rock never moves." },
+    { lvl: "INFO", m: "Cosmic ray flipped a bit somewhere. Rock was unaffected. Rock is always unaffected." },
+    { lvl: "INFO", m: "Root cause: the rock was not moving. You were. Please sit still." },
+    { lvl: "INFO", m: "Rain detected. Rock got wet. Rock did not mind." },
+    { lvl: "INFO", m: "Sunbeam migrated across habitat. Rock did not chase it." },
+    { lvl: "INFO", m: "Rock skipped dinner. Nobody noticed." },
+    { lvl: "INFO", m: "Rock declined \"quick hangout?\" Reason: is a rock." },
+    { lvl: "INFO", m: "Backup completed. Rock is its own backup." },
+    { lvl: "INFO", m: "Weekly rock check-in: feedback was \"very consistent.\"" },
+    { lvl: "INFO", m: "1:1 with Jeff booked. Agenda: vibes. Expected action items: 0." },
+    { lvl: "INFO", m: "Mom asked if rock needs water. System replied: absolutely not." },
+    { lvl: "INFO", m: "Latency check: rock has not responded. Still has not responded." },
+    { lvl: "WARN", m: "Possible rock movement detected. Paging the household geologist…" },
+    { lvl: "WARN", m: "Cat walked through frame. Rock remained professional." },
+    { lvl: "WARN", m: "Roommate tried to \"motivate\" rock. No measurable change in rockness." },
+    { lvl: "WARN", m: "Moss detected on north face. Classifying as unauthorized squatter." },
+    { lvl: "WARN", m: "Jeff has been in the same position since you set him down. Stability: elite." },
+    { lvl: "WARN", m: "A kid picked up a different rock. This rock is fine. This rock is fine." },
+    { lvl: "WARN", m: "Dust bunny migrated near Jeff. Jeff did not pursue." },
+    { lvl: "CRIT", m: "Someone called Jeff a \"pebble.\" Jeff is taking it well." },
+    { lvl: "CRIT", m: "Vacuum passed within 2 meters. Rock held the line." },
+    { lvl: "OK", m: "Jeff still here. Verified by looking." },
+    { lvl: "OK", m: "Habitat humidity normal. Rock dryness: perfect." }
+  ];
+
+  let lastRandomMsg = "";
+
+  function normLvl(lvl) {
+    const legacy = { good: "OK", warn: "WARN", bad: "CRIT", "": "INFO" };
+    const raw = (lvl || "INFO").toString();
+    const up = raw.toUpperCase();
+    if (["DEBUG", "INFO", "WARN", "CRIT", "OK"].includes(up)) return up;
+    return legacy[raw] || "INFO";
+  }
+
+  function pickRandomEvent() {
+    let ev, tries = 0;
+    do {
+      ev = pick(RANDOM_EVENTS);
+      tries++;
+    } while (ev.m === lastRandomMsg && tries < 8);
+    lastRandomMsg = ev.m;
+    return ev;
+  }
+
+  function tickClock() {
+    const d = new Date();
+    $("clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    $("camDate").textContent = d.getFullYear() + "/" + pad(d.getMonth() + 1) + "/" + pad(d.getDate());
+    const up = Date.now() - S.sessionStart;
+    const sec = Math.floor(up / 1000);
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    $("camUptime").textContent = Math.floor(up / 86400000) + "d " + pad(h) + ":" + pad(m) + ":" + pad(s);
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  function renderMood() {
+    $("moodEmoji").textContent = "😐";
+    $("moodWord").textContent = "Unbothered";
+    $("moodNote").textContent = "No emotional telemetry. Subject is a rock.";
+    $("moodVal").textContent = "0.00%";
+    $("moodBar").style.width = "0%";
+    $("dreadVal").textContent = "0%";
+    $("dreadBar").style.width = "0%";
+  }
+
+  function renderCog() {
+    setBar("cogA", "cogABar", 0);
+    setBar("cogM", "cogMBar", 0);
+    setBar("cogE", "cogEBar", 0);
+    const cogTag = $("cogTag");
+    if (cogTag) cogTag.textContent = "COGNITION OFFLINE";
+    const hoursOwned = (Date.now() - S.ownerSince) / 3600000;
+    const rate = hoursOwned > 0.1 ? (S.petCount / hoursOwned).toFixed(2) : "0.00";
+    $("petRate").textContent = rate + " pets/hr";
+  }
+
+  function setBar(v, b, val) {
+    $(v).textContent = Math.round(val) + "%";
+    $(b).style.width = val + "%";
+  }
+
+  function renderVitals() {
+    $("petCount").textContent = S.petCount.toLocaleString();
+    const d = new Date(S.ownerSince);
+    $("ownerSince").textContent = d.getFullYear() + "/" + pad(d.getMonth() + 1) + "/" + pad(d.getDate());
+    $("lastPet").textContent = S.lastPet
+      ? new Date(S.lastPet).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "never";
+    $("totalCost").textContent = "$" + S.totalCost.toFixed(2);
+    $("stillness").textContent = S.stillness.toFixed(2) + "%";
+    $("steps").textContent = S.stepsToday;
+    const mm24 = S.movement.reduce((a, b) => a + b, 0);
+    $("move24").textContent = mm24.toFixed(3) + " mm";
+    $("moveTag").textContent = mm24.toFixed(3) + " mm / 24h";
+    $("dustInv").textContent = S.dustBought + " bags";
+    $("monthlyTotal").textContent = "$" + (109.49 + S.dustBought * 0.01).toFixed(2) + "/mo";
+    $("vitalTag").textContent = mm24 < 0.2 ? "NOMINAL" : mm24 < 0.5 ? "TREMBLING?" : "SEISMIC LOL";
+  }
+
+  function renderEnv() {
+    syncEnv();
+    const e = S.env;
+    const hot = pulseFactor() > 0.08;
+    const rowCls = hot ? "sensor-row pulse" : "sensor-row";
+    const rows = [
+      ["Surface temp", e.tempC.toFixed(1) + " °C", e.tempC > 21.5 ? "warn" : "ok"],
+      ["Humidity", e.humidity.toFixed(0) + "% RH", e.humidity > 55 || e.humidity < 32 ? "warn" : "ok"],
+      ["Solar on rock face", e.lux.toFixed(0) + " lux", "ok"],
+      ["Micro-vibration", e.vibration.toFixed(4) + " g", e.vibration > 0.02 ? "warn" : "ok"],
+      ["Moss coverage", e.mossPct.toFixed(3) + "%", "ok"],
+      ["Photosynthesis", "DISABLED", "ok"],
+      ["Lava proximity risk", (e.lavaRisk * 100).toFixed(4) + "%", "ok"],
+      ["Grass envy sensor", e.grassEnvy ? "TRIGGERED" : "clear", e.grassEnvy ? "warn" : "ok"],
+      ["Packets to rock", e.wifiPkts.toLocaleString(), "ok"]
+    ];
+    $("envSensors").innerHTML = rows.map(([label, val, cls]) =>
+      `<div class="${rowCls}"><span>${label}</span><b class="${cls}">${val}</b></div>`
+    ).join("");
+  }
+
+  function renderTele() {
+    const chips = [
+      ["Sedentary streak", Math.floor((Date.now() - S.ownerSince) / 86400000) + " days"],
+      ["Diagnostics run", S.checksDone],
+      ["Questions ignored", S.questionsAsked],
+      ["Calls declined", S.callsBooked],
+      ["Photos (identical)", S.photos],
+      ["Music sessions", S.musicPlays],
+      ["Habitat cleans", S.cleans],
+      ["Sleep attempts", S.sleepAttempts],
+      ["Gravitational bind", "STABLE"],
+      ["Thoughts/min", "0.0"],
+      ["Breaths/min", "0.0"],
+      ["Compliance w/ being rock", "100%"]
+    ];
+    $("teleGrid").innerHTML = chips.map(([k, v]) =>
+      `<div class="tele-chip"><div class="k">${k}</div><div class="v">${v}</div></div>`
+    ).join("");
+  }
+
+  function renderGraph() {
+    rollHourIfNeeded();
+    const svg = $("graph");
+    const W = 320, H = 120, padL = 28, padR = 6, padT = 12, padB = 18;
+    const pts = S.movement;
+    const dataMax = Math.max(...pts);
+    const ymax = dataMax > 0.008 ? dataMax * 1.2 : 0.12;
+    const x = i => padL + i * (W - padL - padR) / 23;
+    const y = v => H - padB - (v / ymax) * (H - padT - padB);
+    const flash = Date.now() - S.lastMoveAt < 2500;
+    let grid = "", axis = "";
+    for (let g = 0; g <= 2; g++) {
+      const gy = padT + g * (H - padT - padB) / 2;
+      grid += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}"/>`;
+      axis += `<text x="4" y="${gy + 3}">${(ymax * (1 - g / 2)).toFixed(2)}</text>`;
+    }
+    for (let h = 0; h < 5; h++) {
+      const hx = padL + h * ((W - padL - padR) / 4);
+      axis += `<text x="${hx - 10}" y="${H - 4}">${h === 4 ? "now" : "−" + (4 - h) * 6 + "h"}</text>`;
+    }
+    let line = "", area = `M${x(0)},${H - padB}`;
+    pts.forEach((v, i) => {
+      const px = x(i), py = y(v);
+      line += (i ? "L" : "M") + px + "," + py + " ";
+      area += ` L${px},${py}`;
+    });
+    area += ` L${x(pts.length - 1)},${H - padB} Z`;
+    const lastX = x(23), lastY = y(pts[23]);
+    svg.innerHTML = `<g class="ggrid">${grid}</g><path class="garea" d="${area}"/><path class="gline" d="${line}"/>
+      <circle class="gdot${flash ? " flash" : ""}" cx="${lastX}" cy="${lastY}" r="3"/><g class="gaxis">${axis}</g>`;
+  }
+
+  const ALERT_POOL = [
+    { sev: "low", t: "Jeff has not moved. This is correct behavior." },
+    { sev: "info", t: "Firmware update skipped: rock has no firmware." },
+    { sev: "med", t: "You stared at Jeff. Jeff stared at nothing." },
+    { sev: "info", t: "Camera reframed empty shelf space. Jeff still centered." },
+    { sev: "low", t: "Reminder: Jeff does not need walks." }
+  ];
+
+  function renderAlerts() {
+    const staticAlerts = [
+      { sev: "low", t: "Habitat cam online. Subject: rock." },
+      { sev: S.env.grassEnvy ? "med" : "info", t: S.env.grassEnvy ? "Grass outside window looks smug." : "No grass drama in the room." },
+      { sev: "info", t: "Premium Rock Dust stash: " + S.dustBought + " bags (uneaten)." }
+    ];
+    const extra = ALERT_POOL.slice(0, 2);
+    $("alerts").innerHTML = staticAlerts.concat(extra).map(a =>
+      `<div class="alert-item"><span class="sev ${a.sev}">${a.sev}</span><span>${a.t}</span></div>`
+    ).join("");
+  }
+
+  function addLog(msg, lvl) {
+    const level = normLvl(lvl);
+    S.log.unshift({ t: Date.now(), m: msg, lvl: level });
+    if (S.log.length > 100) S.log.pop();
+    renderLog();
+    save();
+  }
+
+  function renderLog() {
+    $("log").innerHTML = S.log.map(e => {
+      const d = new Date(e.t);
+      const level = normLvl(e.lvl || e.c);
+      const cls = "lvl-" + level.toLowerCase();
+      return `<div class="entry ${cls}"><span class="t">${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}</span><span class="lvl">${level}</span><span class="m">${e.m}</span></div>`;
+    }).join("");
+  }
+
+  function emitRandomFluff() {
+    const ev = pickRandomEvent();
+    addLog(ev.m, ev.lvl);
+    if (ev.m.includes("movement detected") && Math.random() < 0.35) {
+      bumpMovement(rand(1, 4) / 1000, null);
+      renderGraph();
+      renderVitals();
+    }
+    if (ev.m.includes("Moss detected")) {
+      S.envBase.mossPct += 0.0001;
+      syncEnv();
+    }
+  }
+
+  function toast(msg, type) {
+    const t = document.createElement("div");
+    t.className = "toast " + (type || "");
+    t.textContent = msg;
+    $("toasts").appendChild(t);
+    setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.remove(), 400); }, 2800);
+  }
+
+  const rock = $("rock");
+  function animateRock(cls) {
+    rock.classList.remove(cls);
+    void rock.offsetWidth;
+    rock.classList.add(cls);
+    setTimeout(() => rock.classList.remove(cls), 500);
+  }
+
+  function particle() {
+    const g = $("particles");
+    const ns = "http://www.w3.org/2000/svg";
+    const t = document.createElementNS(ns, "text");
+    t.setAttribute("x", 150 + rand(-40, 90));
+    t.setAttribute("y", 170);
+    t.textContent = pick(["✨", "·", "∿", "◎"]);
+    t.setAttribute("font-size", rand(10, 16));
+    t.setAttribute("fill", "#5fe3a1");
+    g.appendChild(t);
+    let y = 170, o = 1;
+    const iv = setInterval(() => {
+      y -= 2; o -= 0.05;
+      t.setAttribute("y", y);
+      t.style.opacity = o;
+      if (o <= 0) { clearInterval(iv); t.remove(); }
+    }, 40);
+  }
+
+  const ACTIONS = [
+    { ico: "✋", label: "Pet Rock", sub: "Affection input", fn: pet },
+    { ico: "❓", label: "Ask Question", sub: "Expect silence", fn: askQuestion },
+    { ico: "📅", label: "Book Call", sub: "Calendar full", fn: bookCall },
+    { ico: "🩺", label: "Run Diagnostic", sub: "Full rock scan", fn: checkWellbeing },
+    { ico: "💤", label: "Sleep Mode", sub: "Will fail", fn: sleep },
+    { ico: "🧹", label: "Clean Habitat", sub: "Dust redistribution", fn: clean },
+    { ico: "📸", label: "Take Photo", sub: "Same as last 4k", fn: photo },
+    { ico: "🎵", label: "Play Music", sub: "0% dance rate", fn: music },
+    { ico: "💰", label: "Buy Rock Dust", sub: "$4.99", fn: buyDust },
+    { ico: "📊", label: "Full Report", sub: "Very serious PDF vibes", fn: report },
+    { ico: "🪨", label: "Polish Rock", sub: "Shinier inertia", fn: polish },
+    { ico: "📡", label: "Ping Rock", sub: "ICMP: timeout", fn: pingRock }
+  ];
+
+  function buildActions() {
+    const el = $("actions");
+    el.innerHTML = "";
+    ACTIONS.forEach((a, i) => {
+      const b = document.createElement("button");
+      b.className = "btn" + (i === 0 ? " primary" : "");
+      b.innerHTML = `<span class="ico">${a.ico}</span><span>${a.label}<span class="sub">${a.sub}</span></span>`;
+      b.onclick = a.fn;
+      el.appendChild(b);
+    });
+  }
+
+  function pet() {
+    S.petCount++;
+    S.lastPet = Date.now();
+    disturbHabitat({
+      ms: 16000,
+      tempC: rand(8, 14) / 10,
+      humidity: rand(4, 9),
+      lux: rand(25, 70),
+      vibration: rand(18, 35) / 1000
+    });
+    bumpMovement(rand(4, 14) / 100, null);
+    animateRock("patted");
+    particle();
+    addLog("Rock petted (lifetime pets: " + S.petCount + "). Rock response: none.", "INFO");
+    renderAll();
+    toast("✋ Pet delivered. Response: none.");
+  }
+
+  function askQuestion() {
+    openModal("Ask Jeff a Question", "Jeff will attempt to respond. He may not.",
+      `<textarea id="q" rows="3" placeholder="e.g. Are you happy?"></textarea>`,
+      [{ t: "Cancel", cls: "ghost", fn: closeModal }, { t: "Submit To Rock", fn: submitQuestion }]);
+  }
+
+  function submitQuestion() {
+    const q = $("q").value.trim();
+    if (!q) { toast("Type a question first.", "warn"); return; }
+    S.questionsAsked++;
+    save();
+    $("mBody").innerHTML = `<div style="font-family:var(--mono);color:var(--dim);margin-bottom:8px">Q: ${escapeHtml(q)}</div><div class="typing"><i></i><i></i><i></i></div>`;
+    $("mBtns").innerHTML = "";
+    setTimeout(() => {
+      $("mBody").innerHTML = `<div style="font-family:var(--mono);color:var(--red)">Rock does not respond.</div>`;
+      $("mBtns").innerHTML = '<button class="btn-sm" onclick="document.getElementById(\'overlay\').classList.remove(\'open\')">Close</button>';
+      addLog("Question submitted. Timeout after ∞ ms.", "WARN");
+      renderAll();
+    }, rand(1600, 2800));
+  }
+
+  function bookCall() {
+    S.callsBooked++;
+    save();
+    openModal("Booking Call With Jeff", "Jeff is reviewing his calendar", `<div class="typing"><i></i><i></i><i></i></div>`);
+    $("mBtns").innerHTML = "";
+    setTimeout(() => {
+      $("mBody").innerHTML = `<div style="font-family:var(--mono)">Rock <b style="color:var(--red)">declined</b>.<br><span style="color:var(--dim)">Reason: calendar is sedimentary.</span></div>`;
+      $("mBtns").innerHTML = '<button class="btn-sm" onclick="document.getElementById(\'overlay\').classList.remove(\'open\')">Close</button>';
+      addLog("Rock declined the meeting. Reason: is a rock.", "INFO");
+    }, rand(1400, 2400));
+  }
+
+  function checkWellbeing() {
+    S.checksDone++;
+    disturbHabitat({ ms: 10000, vibration: 0.012, lux: -40 });
+    bumpMovement(rand(6, 18) / 100, null);
+    animateRock("shake");
+    const r = pick([
+      "Diagnostic OK. Heartbeat: absent (expected).",
+      "Jeff is 100% rock by mass and attitude.",
+      "Well-being stable. Ambition: undetectable.",
+      "All sensors confirm: still a rock."
+    ]);
+    addLog(r, "OK");
+    toast("🩺 " + r);
+    renderAll();
+  }
+
+  function sleep() {
+    S.sleepAttempts++;
+    animateRock("shake");
+    addLog("Sleep command issued. Rock does not sleep. Rock waits.", "WARN");
+    toast("💤 Jeff does not sleep. He waits.");
+    renderAll();
+  }
+
+  function clean() {
+    S.cleans++;
+    disturbHabitat({
+      ms: 20000,
+      humidity: rand(-12, -6),
+      lux: rand(30, 90),
+      vibration: rand(8, 20) / 1000
+    });
+    bumpMovement(rand(12, 28) / 100, "Habitat cleaning displaced Jeff");
+    animateRock("patted");
+    addLog("Habitat cleaned. Rock is still dusty. Philosophy unchanged.", "OK");
+    renderAll();
+    toast("🧹 Clean complete. Dust relocated.");
+  }
+
+  function photo() {
+    S.photos++;
+    addLog("Photo #" + S.photos + " captured. Hash matches previous photo.", "INFO");
+    renderAll();
+    toast("📸 Saved to /rocks/jeff/same_as_always.jpg");
+  }
+
+  function music() {
+    S.musicPlays++;
+    disturbHabitat({ ms: 22000, vibration: rand(25, 45) / 1000, lux: rand(5, 20) });
+    bumpMovement(rand(3, 9) / 100, null);
+    animateRock("shake");
+    addLog("Bass dropped. Rock did not drop.", "WARN");
+    renderAll();
+    toast("🎵 Dance probability: 0.00%");
+  }
+
+  function buyDust() {
+    S.dustBought++;
+    S.totalCost += 4.99;
+    addLog("$4.99 Rock Dust purchased. Jeff is not a herbivore.", "CRIT");
+    renderAll();
+    toast("💰 Dust acquired. Consumption: 0 bags.", "warn");
+  }
+
+  function polish() {
+    disturbHabitat({ ms: 12000, tempC: 0.4, vibration: 0.008, lux: 15 });
+    bumpMovement(rand(2, 6) / 100, "Polishing induced micro-slide");
+    addLog("Rock polished. Reflectivity up 0.1%. Personality unchanged.", "OK");
+    renderAll();
+    toast("🪨 Jeff is slightly shinier.");
+  }
+
+  function pingRock() {
+    S.env.wifiPkts += rand(40, 120);
+    addLog("PING jeff.local — Request timed out.", "WARN");
+    renderAll();
+    toast("📡 Host unreachable (rock has no NIC).", "warn");
+  }
+
+  function report() {
+    const mm24 = S.movement.reduce((a, b) => a + b, 0);
+    openModal("Jeff — Full Report", "Classification: ROCK",
+      `<div style="font-family:var(--mono);font-size:12px;line-height:1.65">
+        <p><b>Subject:</b> JEFF</p>
+        <p><b>Age:</b> 4,500,000,000 yr</p>
+        <p><b>Pets:</b> ${S.petCount}</p>
+        <p><b>24h displacement:</b> ${mm24.toFixed(3)} mm</p>
+        <p><b>Stillness index:</b> ${S.stillness.toFixed(2)}%</p>
+        <p><b>Recommendation:</b> continue monitoring nothing.</p>
+      </div>`, [{ t: "Close", fn: closeModal }]);
+  }
+
+  function openModal(title, sub, body, btns) {
+    $("mTitle").textContent = title;
+    $("mSub").textContent = sub;
+    $("mBody").innerHTML = body;
+    const b = $("mBtns");
+    b.innerHTML = "";
+    (btns || []).forEach(x => {
+      const el = document.createElement("button");
+      el.className = "btn-sm " + (x.cls || "");
+      el.textContent = x.t;
+      el.onclick = x.fn;
+      b.appendChild(el);
+    });
+    $("overlay").classList.add("open");
+  }
+  function closeModal() { $("overlay").classList.remove("open"); }
+  $("overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeModal(); });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  $("clearLog").onclick = () => { S.log = []; renderLog(); save(); toast("Log cleared."); };
+  $("reset").onclick = () => { if (confirm("Reset all of Jeff's data?")) { localStorage.removeItem(KEY); location.reload(); } };
+
+  function simulateEnv() {
+    const b = S.envBase;
+    b.tempC += (Math.random() - 0.5) * 0.08;
+    b.humidity = clamp(b.humidity + (Math.random() - 0.5) * 0.6, 28, 62);
+    b.lux = clamp(b.lux + (Math.random() - 0.5) * 18, 80, 900);
+    b.vibration = clamp(b.vibration * 0.96 + Math.random() * 0.0008, 0.0005, 0.02);
+    b.mossPct += Math.random() * 0.00002;
+    b.wifiPkts += rand(2, 24);
+    if (Math.random() < 0.04) b.grassEnvy = !b.grassEnvy;
+    syncEnv();
+    if (Math.random() < 0.12) bumpMovement(Math.random() * 0.006, null);
+    S.tickerIdx = (S.tickerIdx + 1) % TICKERS.length;
+    $("ticker").textContent = TICKERS[S.tickerIdx];
+    const sig = $("sig").querySelectorAll("i");
+    const level = rand(2, 5);
+    sig.forEach((bar, i) => {
+      bar.style.height = (i < level ? 4 + i * 3 : 3) + "px";
+      bar.style.background = i < level - 1 ? "var(--green)" : "var(--faint)";
+    });
+    $("camSignal").textContent = "SIGNAL: " + pick(["STABLE", "STABLE", "OK", "ROCKY"]);
+    save();
+  }
+
+  function renderAll() {
+    renderMood();
+    renderCog();
+    renderVitals();
+    renderEnv();
+    renderTele();
+    renderGraph();
+    renderAlerts();
+  }
+
+  buildActions();
+  renderLog();
+  renderAll();
+  if (S.log.length === 0) {
+    addLog("Jeff monitor v4.2 started. Watching 1 (one) rock.", "INFO");
+    addLog("Connected to CAM-07. Rock acquired. Rock was not hard to find.", "OK");
+    addLog("Achievement unlocked: home dashboard for one (1) pet rock.", "OK");
+    addLog("Jeff adopted. Monitoring commenced.", "INFO");
+  }
+
+  setInterval(() => { simulateEnv(); renderAll(); }, 5000);
+  setInterval(() => { if (Math.random() < 0.62) emitRandomFluff(); }, 3800);
+  setInterval(() => {
+    syncEnv();
+    if (S.habitatPulse.until > Date.now() || Date.now() - S.lastMoveAt < 3000) {
+      renderEnv();
+      renderGraph();
+      renderVitals();
+    }
+  }, 1000);
+  setInterval(() => { rollHourIfNeeded(); renderGraph(); renderVitals(); }, 30000);
+})();
+</script>
+</body>
+</html>
