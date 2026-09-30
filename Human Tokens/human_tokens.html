@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Tokens — how fast are your fingers?</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='78' font-size='78'>🧠</text></svg>">
+<style>
+:root{
+  --bg:#0a0c11; --panel:#12151d; --panel-2:#161a24; --line:#232937;
+  --text:#e9edf5; --muted:#8b94a8; --dim:#5c6477;
+  --accent:#5eead4; --accent-2:#7c6bff;
+  --mono:ui-monospace,"SF Mono","Cascadia Code","Consolas","JetBrains Mono","Menlo",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1100px 520px at 85% -10%, rgba(124,107,255,.10), transparent 60%),
+    radial-gradient(900px 480px at -10% 110%, rgba(94,234,212,.07), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans);
+  min-height:100vh; display:flex; flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent); text-decoration:none}
+
+header{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 22px; border-bottom:1px solid var(--line);
+  flex-wrap:wrap;
+}
+.logo{font-weight:800; letter-spacing:.14em; font-size:15px}
+.logo b{color:var(--accent)}
+.logo .cube{color:var(--accent-2)}
+.badge{
+  font-family:var(--mono); font-size:11px; color:var(--muted);
+  border:1px solid var(--line); background:var(--panel);
+  padding:4px 9px; border-radius:999px; white-space:nowrap;
+}
+.badge .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--accent); margin-right:6px; box-shadow:0 0 8px var(--accent)}
+.head-right{margin-left:auto; display:flex; gap:8px}
+button.ghost{
+  font-family:var(--mono); font-size:12px; color:var(--text);
+  background:var(--panel-2); border:1px solid var(--line);
+  border-radius:9px; padding:7px 12px; cursor:pointer;
+}
+button.ghost:hover{border-color:var(--accent); color:var(--accent)}
+
+main{
+  flex:1; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(330px,.85fr);
+  gap:18px; padding:18px 22px 26px; max-width:1400px; width:100%; margin:0 auto;
+}
+@media (max-width:980px){ main{grid-template-columns:1fr} }
+
+.card{
+  background:linear-gradient(180deg, var(--panel), #0e1118);
+  border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.35);
+  display:flex; flex-direction:column; min-width:0;
+}
+.card > h2{
+  margin:0; padding:13px 16px; font-size:11px; font-family:var(--mono);
+  letter-spacing:.18em; color:var(--dim); border-bottom:1px solid var(--line);
+  text-transform:uppercase; display:flex; align-items:center; gap:8px; font-weight:600;
+}
+.card > h2 .hicon{filter:saturate(1.3)}
+
+/* ---------- editor (textarea overlay on painted backdrop) ---------- */
+.editor-card{min-height:440px}
+.editor-shell{position:relative; flex:1; min-height:400px; border-radius:0 0 16px 16px; overflow:hidden}
+.editor-shell .paint, .editor-shell textarea.editor{
+  position:absolute; inset:0; margin:0;
+  padding:20px 22px; font-family:var(--mono); font-size:17px; line-height:1.65;
+  letter-spacing:normal; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word;
+  tab-size:4; border:0;
+}
+.editor-shell .paint{overflow:hidden; color:transparent; user-select:none; pointer-events:none}
+.editor-shell textarea.editor{
+  background:transparent; color:transparent; caret-color:var(--accent);
+  resize:none; outline:none; overflow-y:auto; z-index:2;
+}
+.editor-shell textarea.editor::selection{background:rgba(94,234,212,.22)}
+.editor-shell textarea.editor::placeholder{color:var(--dim); font-style:italic}
+.editor-shell textarea.editor::-webkit-scrollbar{width:10px}
+.sect{padding:1px 8px 1px 10px; margin-left:-10px; border-radius:6px; border-left:2px solid transparent}
+.sect.odd{background:rgba(255,255,255,.022); border-left-color:hsla(var(--sh,190),70%,60%,.55)}
+.sect .nl{white-space:pre-wrap}
+.tok{
+  color:hsl(var(--h,190) 82% 72%);
+  background:hsla(var(--h,190),72%,60%,.115);
+  border-radius:3px;
+  box-shadow:inset 0 -1px 0 hsla(var(--h,190),72%,60%,.30);
+}
+.editor-foot{
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  padding:9px 16px; border-top:1px solid var(--line);
+  font-family:var(--mono); font-size:11px; color:var(--dim);
+}
+.editor-foot .kbd{border:1px solid var(--line); border-radius:5px; padding:1px 5px; background:var(--panel-2)}
+
+/* ---------- live ---------- */
+.live{padding:18px 20px 6px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+#tpsBig{
+  font-family:var(--mono); font-weight:700;
+  font-size:clamp(56px,8vw,84px); line-height:.95; letter-spacing:-.02em;
+  color:var(--accent); text-shadow:0 0 34px rgba(94,234,212,.35);
+  font-variant-numeric:tabular-nums;
+}
+#tpsBig.idle{color:var(--dim); text-shadow:none}
+.live .unit{font-family:var(--mono); color:var(--muted); font-size:13px; letter-spacing:.12em}
+#statusLine{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--dim)}
+#statusLine .cls{color:var(--accent-2)}
+canvas#spark{display:block; width:100%; height:54px}
+
+.grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--line);
+      border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+.cell{background:var(--panel); padding:11px 14px; min-width:0}
+.cell .k{font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; color:var(--dim); text-transform:uppercase}
+.cell .v{font-family:var(--mono); font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:3px}
+.cell .v small{font-size:11px; color:var(--muted); font-weight:400; margin-left:2px}
+
+/* ---------- comparison ---------- */
+.cmp{padding:14px 16px; display:flex; flex-direction:column; gap:10px}
+.cmp .row{display:flex; align-items:center; gap:10px}
+.cmp .ico{font-size:22px; width:30px; text-align:center; flex:none}
+.cmp .l1{font-size:14.5px; line-height:1.35}
+.cmp .l1 b{color:var(--text)}
+.cmp .l1 .hl{color:var(--accent); font-family:var(--mono); font-weight:700}
+.cmp .l1 .slow{color:#ff9d7a; font-family:var(--mono); font-weight:700}
+.cmp .l2{font-size:11.5px; color:var(--muted); font-family:var(--mono)}
+.cmp .track{position:relative; height:8px; border-radius:99px; background:var(--panel-2); border:1px solid var(--line); margin-top:4px}
+.cmp .track i{position:absolute; top:50%; transform:translate(-50%,-50%); width:12px; height:12px;
+  border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent)}
+.cmp .track .tick{position:absolute; top:50%; transform:translate(-50%,-50%);
+  width:5px; height:5px; border-radius:50%; background:var(--dim)}
+.cmp .tracklab{display:flex; justify-content:space-between; font-family:var(--mono); font-size:9.5px; color:var(--dim)}
+
+/* ---------- leaderboard ---------- */
+.board ol{margin:0; padding:6px 8px 12px; list-style:none; display:flex; flex-direction:column; gap:5px}
+.board li{
+  display:grid; grid-template-columns:26px 1fr auto; gap:10px; align-items:center;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px;
+}
+.board li.none{grid-template-columns:1fr; color:var(--dim); font-style:italic; text-align:center; border-style:dashed; background:transparent}
+.board .rank{font-family:var(--mono); color:var(--dim); font-size:12px; text-align:center}
+.board li:nth-of-type(1) .rank{color:#ffd66a}
+.board .snip{font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--mono)}
+.board .tps{font-family:var(--mono); font-size:15px; color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap}
+.board .tps small{color:var(--dim); font-size:10px}
+.mini{font-family:var(--mono); font-size:10.5px; color:var(--dim); background:none; border:none; cursor:pointer; margin-left:auto}
+.mini:hover{color:#ff9d7a}
+
+footer{
+  padding:16px 22px 26px; border-top:1px solid var(--line);
+  color:var(--dim); font-size:12px; line-height:1.65; max-width:1400px; width:100%; margin:0 auto;
+}
+footer b{color:var(--muted)}
+#test-out{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="cube">▚</span> HUMAN<b>TOKENS</b></div>
+  <div class="badge"><span class="dot"></span><span id="engineName">char-count tokenizer · chars ÷ 4</span></div>
+  <div class="head-right">
+    <button class="ghost" id="btnClear" title="Clear text and reset session (shift+enter does this too, probably)">⟲ reset session</button>
+  </div>
+</header>
+
+<main>
+  <section class="card editor-card">
+    <h2><span class="hicon">⌨</span> type anything — your words become tokens</h2>
+    <div class="editor-shell" id="shell">
+      <div class="paint" id="paint" aria-hidden="true"></div>
+      <textarea class="editor" id="editor" spellcheck="false" autocorrect="off" autocomplete="off"
+        placeholder="start typing… your text gets split into tokens, one colour each, like a model reads it"></textarea>
+    </div>
+    <div class="editor-foot">
+      <span><span class="kbd">chars</span> <span id="ftChars">0</span></span>
+      <span><span class="kbd">words</span> <span id="ftWords">0</span></span>
+      <span><span class="kbd">tokens</span> <span id="ftTokens">0</span></span>
+      <span><span class="kbd">chars/token</span> <span id="ftCpt">–</span></span>
+      <span style="margin-left:auto" id="ftHint">each colour = one token</span>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+    <section class="card">
+      <h2><span class="hicon">⚡</span> live tokens / second</h2>
+      <div class="live">
+        <div id="tpsBig">0.0</div>
+        <div class="unit">tok/s</div>
+        <div id="statusLine">awaiting fingers · class <span class="cls">sleeping CPU</span></div>
+      </div>
+      <canvas id="spark"></canvas>
+      <div class="grid">
+        <div class="cell"><div class="k">Average TPS</div><div class="v" id="stAvg">0.0</div></div>
+        <div class="cell"><div class="k">Total tokens</div><div class="v" id="stTokens">0</div></div>
+        <div class="cell"><div class="k">Time</div><div class="v" id="stTime">0s</div></div>
+        <div class="cell"><div class="k">Best burst</div><div class="v" id="stBest">0.0</div></div>
+        <div class="cell"><div class="k">Peak TPS</div><div class="v" id="stPeak">0.0</div></div>
+        <div class="cell"><div class="k">Tokens/word</div><div class="v" id="stTpw">–</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="hicon">⚖</span> the humbling</h2>
+      <div class="cmp" id="cmp">
+        <div class="row"><div class="ico">⌨</div>
+          <div><div class="l1">Start typing and we'll see where you rank…</div>
+          <div class="l2">real machines, real(ish) tok/s</div></div>
+        </div>
+        <div class="track"><i id="trackPin" style="left:2%"></i></div>
+        <div class="tracklab"><span>you</span><span>raspberry pi</span><span>gpu</span><span>datacenter</span></div>
+      </div>
+    </section>
+
+    <section class="card board">
+      <h2><span class="hicon">⚏</span> best bursts <button class="mini" id="btnClearBoard">clear</button></h2>
+      <ol id="board"></ol>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <b>how it works ·</b> every keystroke your text is re-split into token-sized chunks by a fast character-count heuristic
+  (≈ one token per 4 characters of a word, short words are one token, CJK is one token per character, emoji cost two) —
+  the same shape real BPE tokenizers produce, without the 2 MB vocabulary. Each chunk gets its own colour so you can see
+  the text the way a model "reads" it. The big number is your live tokens-per-second over the last ~1.6 s of typing;
+  below it your session average, your best burst, and a comparison against real hardware.
+  <br><b>note ·</b> hardware tok/s figures are order-of-magnitude community benchmarks (batch=1, typical fp16/quantised setups) —
+  great for comedy, inadmissible in court.
+</footer>
+
+<div id="test-out"></div>
+
+<script>
+"use strict";
+/*__PURE_BEGIN__*/
+/* ------------------------------------------------------------------ *
+ *  Pure token math — no DOM. Also used by the node test harness.     *
+ * ------------------------------------------------------------------ */
+function LOG2(x){ return Math.log(x) / Math.log(2); }
+function fnv1a(str){
+  var h = 0x811c9dc5;
+  for (var i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+var CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\ufb00-\ufeff\u3000-\u303f\uac00-\ud7af\uff00-\uffef\u{20000}-\u{3ffff}]/u;
+function charWeight(ch){
+  // surrogate pair => code point outside BMP => ~2 bytes of vocabulary
+  return ch.length > 1 ? 2 : 1;
+}
+/* Split a word into `n` near-equal visual chunks (pure, deterministic). */
+function chunkWord(word, n){
+  var cps = Array.from(word);
+  var out = [], i = 0;
+  for (var k=0;k<n;k++){
+    var take = Math.round(cps.length * (k+1) / n) - i;
+    out.push(cps.slice(i, i+take).join(""));
+    i += take;
+  }
+  if (i < cps.length) out[out.length-1] += cps.slice(i).join("");
+  return out.filter(function(s){ return s !== ""; });
+}
+/* Estimate token chunks of a whole string. Returns [{text, core, id}]. */
+function estimateTokens(text){
+  var tokens = [], pendingSpaces = "";
+  var parts = text.match(/\s+|\S+/g) || [];
+  for (var p=0;p<parts.length;p++){
+    var part = parts[p];
+    if (/^\s+$/.test(part)){
+      // newlines are their own tokens; ordinary space runs glue onto the next word
+      var segs = part.split(/(\n)/);
+      for (var s=0;s<segs.length;s++){
+        var seg = segs[s];
+        if (seg === "") continue;
+        if (seg === "\n"){ tokens.push({text:pendingSpaces+"\n", core:"\n", id:fnv1a("\\n")}); pendingSpaces=""; }
+        else pendingSpaces += seg;
+      }
+      continue;
+    }
+    var n;
+    if (CJK.test(part)){                       // each CJK char ≈ its own token
+      n = Array.from(part).length;
+    } else {
+      var w = 0, cps = Array.from(part);
+      for (var c=0;c<cps.length;c++) w += charWeight(cps[c]);
+      n = Math.max(1, Math.ceil(w / 4));      // <-- the whole "model": ~4 chars/token
+    }
+    var chunks = chunkWord(part, n);
+    for (var k=0;k<chunks.length;k++){
+      var core = chunks[k];
+      var shown = (k===0 ? pendingSpaces : "") + core;
+      tokens.push({ text:shown, core:core, id:fnv1a(core.toLowerCase()) });
+    }
+    pendingSpaces = "";
+  }
+  return tokens;
+}
+function countWords(text){
+  var t = text.trim();
+  return t === "" ? 0 : t.split(/\s+/).length;
+}
+var CLASSES = [
+  [0.5, "sleeping CPU"],
+  [1.0, "hunt-and-peck energy"],
+  [1.5, "intern"],
+  [2.5, "casual typist"],
+  [4,   "keyboard warm"],
+  [6,   "mech-keyboard enthusiast"],
+  [9,   "human GPU (allegedly)"],
+  [14,  "court stenographer cosplay"],
+  [25,  "paste-detector immune system"],
+  [60,  "faster than your LLM bill"],
+  [120, "4090-tier fingers (suspicious)"],
+  [1e9, "definitely copy-pasting"]
+];
+function classFor(tps){
+  for (var i=0;i<CLASSES.length;i++) if (tps < CLASSES[i][0]) return CLASSES[i][1];
+  return "unknown";
+}
+/*__PURE_END__*/
+
+/* --------------------------- hardware ----------------------------- *
+ * tokens/sec, order-of-magnitude community benchmarks (batch ≈ 1).   *
+ * ------------------------------------------------------------------ */
+var MACHINES = [
+  { ico:"📠", name:"7B on a 2012 netbook (battery saver on)",     tps:0.35 },
+  { ico:"🖥", name:"70B model on a laptop CPU",                    tps:0.7  },
+  { ico:"☕", name:"Llama 3.2 1B on a phone NPU (offline mode)",   tps:1.2  },
+  { ico:"🍓", name:"Llama 1B on a Raspberry Pi 4B",                tps:2    },
+  { ico:"📱", name:"Gemma 2B in a mobile browser tab",             tps:3.5  },
+  { ico:"🍓", name:"Llama 3 8B on a Raspberry Pi 5",               tps:5    },
+  { ico:"🎮", name:"Llama 3 8B on a Steam Deck (AC optional)",     tps:6.5  },
+  { ico:"🦥", name:"Mistral 7B on an M1 MacBook Air (CPU)",         tps:8    },
+  { ico:"🍎", name:"Llama 3 8B on M2 MacBook Pro (Metal)",         tps:10   },
+  { ico:"🎛", name:"Llama 3 70B on an RTX 4090",                   tps:11   },
+  { ico:"🎮", name:"Gemma 2 2B on a Jetson Orin Nano",             tps:16   },
+  { ico:"🎛", name:"Mistral 7B on a GTX 1080 Ti",                  tps:26   },
+  { ico:"🎛", name:"Llama 3 8B on an RTX 3060 (12 GB, hope)",      tps:32   },
+  { ico:"🎛", name:"Llama 3 8B on an RTX 3070",                    tps:45   },
+  { ico:"🎛", name:"Llama 3 8B on an RTX 4070",                    tps:70   },
+  { ico:"🎛", name:"Llama 3 8B on an RTX 4080",                    tps:95   },
+  { ico:"🚀", name:"Llama 3 8B on an RTX 4090",                    tps:120  },
+  { ico:"🚀", name:"Phi-3 mini on an RTX 4090",                    tps:150  },
+  { ico:"🖰", name:"Llama 3 8B on an H100",                        tps:220  },
+  { ico:"🖰", name:"Llama 3 70B on 4× A100",                       tps:280  },
+  { ico:"🖰", name:"Mixtral 8×7B on 8× H100",                      tps:400  },
+  { ico:"🗔", name:"Llama 3 405B on 8× H100 (quantised, praying)", tps:550  },
+  { ico:"🗔", name:"Llama 3 70B on a GB200 NVLink rack",           tps:800  },
+  { ico:"🌐", name:"frontier model on a hyperscaler row (marketing slide)", tps:1200 }
+];
+var REF = MACHINES[16]; // Llama 3 8B on RTX 4090 — the reference roast
+
+/* ------------------------------ state ----------------------------- */
+var S = {
+  tokens:0, chars:0, words:0,
+  startedAt:null, lastKeyAt:0, activeMs:0,
+  events:[],            // {t, n} token arrivals for the live window
+  peak:0,
+  run:null,             // active burst run {startT, tokens, text}
+  lastLive:0
+};
+var WINDOW = 1600;      // live tps window, ms
+var IDLE   = 2500;      // ms of no keys => clock stops
+var GAP    = 900;       // ms between runs
+var LS_KEY = "humantokens.bursts.v2";
+
+var $ = function(id){ return document.getElementById(id); };
+var editor = $("editor"), paint = $("paint");
+
+/* --------------------------- rendering ---------------------------- */
+function hueOf(tok){ return tok.id % 360; }
+function render(toks){
+  var text = editor.value;
+  if (!toks) toks = estimateTokens(text);
+  var html = "", sect = 0, buf = "";
+  function flushSect(){
+    if (buf === "") { return; }
+    var h = 190 + (sect*47)%160;
+    html += '<div class="sect ' + (sect%2 ? "odd":"") + '" style="--sh:' + h + '">' + buf + "</div>";
+    buf = ""; sect++;
+  }
+  for (var i=0;i<toks.length;i++){
+    var t = toks[i];
+    if (t.core === "\n"){
+      buf += spanFor({text:"\n", core:"\n", id:t.id});
+      flushSect();
+      continue;
+    }
+    buf += spanFor(t);
+  }
+  flushSect();
+  if (html === "") html = '<div class="sect"></div>';
+  paint.innerHTML = html;
+  paint.scrollTop = editor.scrollTop;
+  S.chars = text.length;
+  S.words = countWords(text);
+  $("ftChars").textContent = S.chars;
+  $("ftWords").textContent = S.words;
+  $("ftTokens").textContent = S.tokens;
+  $("ftCpt").textContent = S.tokens ? (S.chars/S.tokens).toFixed(1) : "–";
+}
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function spanFor(t){
+  if (t.core === "\n") return '<span class="nl">\n</span>';
+  var pad = t.text.length - t.core.length;             // leading spaces glued on
+  return '<span class="tok" style="--h:' + hueOf(t) + '" title="#' + t.id + ' · &quot;' + esc(t.core) + '&quot;">'
+       + (pad ? esc(t.text.slice(0,pad)) : "") + esc(t.core) + "</span>";
+}
+
+/* ------------------------------ input ----------------------------- */
+editor.addEventListener("input", function(){
+  var before = S.tokens;
+  var toks = estimateTokens(editor.value);
+  var added = toks.length - before;
+  S.tokens = toks.length;
+  var now = performance.now();
+  if (S.startedAt === null && added >= 0 && editor.value.length > 0){ S.startedAt = now; S.lastKeyAt = now; }
+  if (added > 0){
+    S.events.push({ t:now, n:added });
+    if (S.events.length > 500) S.events.shift();
+    S.lastKeyAt = now;
+    trackRun(now, added, editor.value);
+  } else if (added < 0){
+    S.lastKeyAt = now;                     // backspace still counts as activity
+  }
+  render(toks);
+});
+editor.addEventListener("scroll", function(){ paint.scrollTop = editor.scrollTop; paint.scrollLeft = editor.scrollLeft; });
+editor.addEventListener("keydown", function(e){
+  if (e.key === "Shift" || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === "Enter"){                       // long-enough interval to break the run
+    sealRun();
+  }
+  S.lastKeyAt = performance.now();
+});
+
+/* ---------------------------- timing ------------------------------ */
+function liveTps(now){
+  while (S.events.length && now - S.events[0].t > WINDOW) S.events.shift();
+  if (!S.events.length) return 0;
+  var sum = 0; for (var i=0;i<S.events.length;i++) sum += S.events[i].n;
+  return sum / (WINDOW/1000);
+}
+function fmtTps(v){ return v >= 10 ? Math.round(v) : (Math.round(v*10)/10).toFixed(1); }
+function fmtTime(ms){
+  var s = ms/1000;
+  if (s < 60) return s.toFixed(1) + "s";
+  var m = Math.floor(s/60);
+  return m + "m " + String(Math.floor(s%60)).padStart(2,"0") + "s";
+}
+
+var rafLastTick = performance.now();
+function tick(){
+  var now = performance.now(), dt = now - rafLastTick; rafLastTick = now;
+  if (S.startedAt !== null && now - S.lastKeyAt < IDLE) S.activeMs += dt;
+  var live = liveTps(now);
+  if (now - S.lastKeyAt >= IDLE) live = 0;
+  if (live > S.peak) S.peak = live;
+  var avg = S.activeMs > 300 ? S.tokens / (S.activeMs/1000) : 0;
+  var idle = (live === 0);
+  var big = $("tpsBig");
+  big.textContent = idle ? "0.0" : fmtTps(live);
+  big.classList.toggle("idle", idle);
+  $("stAvg").textContent = fmtTps(avg);
+  $("stTokens").textContent = S.tokens;
+  $("stTime").textContent = fmtTime(S.activeMs);
+  $("stPeak").textContent = fmtTps(S.peak);
+  $("stBest").textContent = fmtTps(bestBurst());
+  $("stTpw").textContent = S.words && S.tokens ? (S.tokens/S.words).toFixed(2) : "–";
+  $("statusLine").innerHTML = idle
+    ? "idle — keep typing · class <span class='cls'>" + classFor(avg) + "</span>"
+    : "typing · class <span class='cls'>" + classFor(live) + "</span>";
+  var cmpTps = idle ? avg : live;
+  if (Math.abs(cmpTps - cmpLastTps) >= 0.05 || (cmpTps === 0) !== cmpLastIdle){
+    cmpLastTps = cmpTps;
+    cmpLastIdle = cmpTps === 0;
+    renderCompare(cmpTps);
+  }
+  spark.push(idle ? 0 : live);
+  raf.render();
+}
+var cmpLastTps = -1, cmpLastIdle = true;
+var boardCache = null;
+/* requestAnimationFrame loop with a light throttle for the canvas */
+var raf = (function(){
+  var last = 0, running = false, FRAME = 1000/24;
+  function render(){
+    var now = performance.now();
+    if (now - last < FRAME) return;
+    last = now;
+    spark.draw($("spark"));
+  }
+  function frame(){
+    if (!running) return;
+    tick();
+    requestAnimationFrame(frame);
+  }
+  return {
+    render:render,
+    start:function(){
+      if (running) return;
+      running = true;
+      requestAnimationFrame(frame);
+    },
+    stop:function(){ running = false; }
+  };
+})();
+
+/* -------------------------- burst runs ---------------------------- */
+function trackRun(now, added, fullText){
+  if (!S.run || now - S.run.lastAt > GAP){
+    sealRun();
+    S.run = { startT:now, lastAt:now, tokens:added, startLen:Math.max(0, fullText.length - added*6) };
+  } else {
+    S.run.lastAt = now; S.run.tokens += added;
+  }
+}
+function sealRun(){
+  if (!S.run) return;
+  var r = S.run; S.run = null;
+  var dur = (r.lastAt - r.startT)/1000;
+  if (dur < 0.35 || r.tokens < 4) return;
+  var tps = r.tokens / dur;
+  var snip = editor.value.slice(r.startLen, r.startLen + 120).replace(/\s+/g," ").trim();
+  if (!snip) return;
+  var list = loadBoard();
+  list.push({ tps:Math.round(tps*10)/10, tokens:r.tokens, text:snip, at:Date.now() });
+  list.sort(function(a,b){ return b.tps - a.tps; });
+  saveBoard(list.slice(0,8));
+  drawBoard();
+}
+function bestBurst(){ var l = boardCache || loadBoard(); return l.length ? l[0].tps : 0; }
+function loadBoard(){
+  try { boardCache = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+  catch(e){ boardCache = []; }
+  return boardCache;
+}
+function saveBoard(l){ boardCache = l; try { localStorage.setItem(LS_KEY, JSON.stringify(l)); } catch(e){} }
+function drawBoard(){
+  var l = loadBoard(), ol = $("board");
+  if (!l.length){ ol.innerHTML = '<li class="none">no bursts yet — go fast</li>'; return; }
+  ol.innerHTML = l.slice(0,5).map(function(e,i){
+    return "<li><span class='rank'>" + (i+1) + "</span>"
+         + "<span class='snip' title='" + esc(e.text).replace(/'/g,"&#39;") + "'>“" + esc(e.text) + "”</span>"
+         + "<span class='tps'>" + (e.tps>=10?Math.round(e.tps):e.tps.toFixed(1)) + " <small>tok/s · " + e.tokens + "t</small></span></li>";
+  }).join("");
+}
+$("btnClearBoard").onclick = function(){ saveBoard([]); drawBoard(); };
+$("btnClear").onclick = function(){
+  editor.value = ""; S.tokens = 0; S.chars = 0; S.words = 0;
+  S.startedAt = null; S.activeMs = 0; S.events = []; S.peak = 0; S.run = null;
+  spark.reset(); render(); editor.focus();
+};
+
+/* --------------------------- comparison ---------------------------- */
+var cmpCache = "";
+var ROASTS = {
+  idle: [
+    "real machines, real(ish) tok/s",
+    "silicon is watching. judgmentally.",
+    "your move, carbon-based tokenizer"
+  ],
+  slow: [
+    "tip: single-letter words are one token each — cruelty, but accurate",
+    "the model isn't slow. the model is you. lovingly.",
+    "try common words — fewer weird splits, slightly less shame",
+    "backspace still counts as activity. the universe is kind sometimes.",
+    "you're not losing to the 4090. you're losing to physics."
+  ],
+  lapped: [
+    "that's one GPU quietly updating its LinkedIn",
+    "somewhere a Raspberry Pi felt a disturbance",
+    "not bad for meat with ten fingers and no CUDA",
+    "you lapped silicon. it can't even be mad.",
+    "next milestone: touch grass, then come back faster"
+  ],
+  chasing: [
+    "keep going — the next GPU is priced like a car",
+    "one more burst and you graduate from 'intern' to 'menace'",
+    "the fan curve on the next tier is audible from space"
+  ],
+  refSlower: [
+    "still cheaper than renting the reference box for an hour",
+    "the 4090 doesn't judge. it just generates tokens you can't afford",
+    "ratio embarrassing? wait until you see the electricity bill",
+    "you could 10× this and still lose — that's the joke"
+  ],
+  refFaster: [
+    "ok that's actually suspicious. blink twice if you're a script.",
+    "you beat the reference rig. please log off.",
+    "NVidia would like a word. and your wrists.",
+    "at this point you're the baseline on the slide deck"
+  ],
+  god: [
+    "you've outrun the marketing slide. legal is nervous.",
+    "hyperscaler row detected in rear-view mirror",
+    "either elite typist or elite paste — history will decide"
+  ]
+};
+function roastPick(arr, seed){ return arr[((seed % arr.length) + arr.length) % arr.length]; }
+function renderCompare(tps){
+  tps = tps || 0;
+  var key = tps.toFixed(1);
+  if (key === cmpCache) return; cmpCache = key;
+  var el = $("cmp");
+  var seed = Math.floor(tps * 13 + fnv1a(key) % 97);
+  if (tps <= 0){
+    el.innerHTML = '<div class="row"><div class="ico">⌨</div><div>'
+      + '<div class="l1">Start typing — let\'s see what you are.</div>'
+      + '<div class="l2">' + roastPick(ROASTS.idle, seed) + '</div></div></div>'
+      + '<div class="track"><i style="left:2%"></i></div>'
+      + '<div class="tracklab"><span>you</span><span>raspberry pi</span><span>gpu</span><span>datacenter</span></div>';
+    return;
+  }
+  var beaten = MACHINES.filter(function(m){ return m.tps < tps; });
+  var ahead  = MACHINES.filter(function(m){ return m.tps >= tps; });
+  var beat   = beaten[beaten.length-1];
+  var nextUp = ahead[0];
+  var refRatio = REF.tps / tps;
+
+  var line1, line2, line3 = "";
+  if (!beaten.length){
+    line1 = "Slower than " + MACHINES[0].ico + " <b>" + MACHINES[0].name + "</b> (" + MACHINES[0].tps + " tok/s). we don't judge. much.";
+    line2 = roastPick(ROASTS.slow, seed);
+  } else {
+    line1 = "You're <b>faster</b> than " + beat.ico + " <b>" + beat.name + "</b> (" + beat.tps + " tok/s)";
+    line2 = beaten.length + " of " + MACHINES.length + " machines lapped · "
+          + roastPick(ROASTS.lapped, seed + beaten.length);
+    if (nextUp){
+      line2 += " · next: " + nextUp.ico + " " + nextUp.name + " at " + nextUp.tps + " tok/s";
+      if (nextUp.tps - tps < 8) line3 = roastPick(ROASTS.chasing, seed);
+    }
+  }
+  if (tps >= MACHINES[MACHINES.length - 1].tps * 0.85){
+    line3 = roastPick(ROASTS.god, seed);
+  }
+  var refLine = refRatio >= 1
+    ? "you are <span class='slow'>" + fmtRatio(refRatio) + "× slower</span> than " + REF.ico + " " + REF.name
+    : "you are <span class='hl'>" + fmtRatio(1/refRatio) + "× faster</span> than " + REF.ico + " " + REF.name;
+  var refSub = refRatio >= 1
+    ? roastPick(ROASTS.refSlower, seed)
+    : roastPick(ROASTS.refFaster, seed);
+
+  var pos = Math.log(Math.max(0.5,Math.min(1200,tps))) / Math.log(1200);
+  var ticks = MACHINES.map(function(m){ return '<span class="tick" style="left:' + (LOG2(m.tps) / LOG2(1200)*100).toFixed(1) + '%"></span>'; }).join("");
+
+  el.innerHTML =
+     '<div class="row"><div class="ico">' + (beat ? beat.ico : "🐌") + '</div><div>'
+   + '<div class="l1">' + line1 + "</div><div class='l2'>" + line2
+   + (line3 ? "</div><div class='l2'>" + line3 : "") + "</div></div></div>"
+   + '<div class="row"><div class="ico">' + REF.ico + '</div><div><div class="l1">' + refLine
+   + '</div><div class="l2">' + refSub + " · ref " + REF.tps + " tok/s</div></div></div>"
+   + '<div class="track">' + ticks + '<i style="left:' + (Math.max(0.02,Math.min(0.98,pos))*100).toFixed(1) + '%"></i></div>'
+   + '<div class="tracklab"><span>0.3</span><span>pi</span><span>4090</span><span>1200+ tok/s</span></div>';
+}
+function fmtRatio(r){ return r >= 100 ? Math.round(r) : r >= 10 ? Math.round(r) : (Math.round(r*10)/10); }
+
+/* ---------------------------- sparkline ---------------------------- */
+var spark = {
+  data:[], maxLen:90,
+  reset:function(){ this.data = []; },
+  push:function(v){ this.data.push(v); if (this.data.length > this.maxLen) this.data.shift(); },
+  draw:function(cv){
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth, h = cv.clientHeight || 54;
+    if (!w) return;
+    if (cv.width !== w*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+    var g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+    g.clearRect(0,0,w,h);
+    var peak = Math.max(4, this.data.length ? Math.max.apply(null, this.data) : 4);
+    var n = this.data.length; if (n < 2) return;
+    var step = w/(this.maxLen-1);
+    // area
+    g.beginPath();
+    for (var i=0;i<n;i++){
+      var x = w - (n-1-i)*step, y = h - 3 - (this.data[i]/peak)*(h-8);
+      i ? g.lineTo(x,y) : g.moveTo(x,y);
+    }
+    g.strokeStyle = "rgba(94,234,212,.85)"; g.lineWidth = 1.6;
+    g.lineJoin = "round"; g.stroke();
+    g.lineTo(w,h); g.lineTo(w-(n-1)*step,h); g.closePath();
+    g.fillStyle = "rgba(94,234,212,.09)"; g.fill();
+    // baseline
+    g.beginPath(); g.moveTo(0,h-2.5); g.lineTo(w,h-2.5);
+    g.strokeStyle = "rgba(255,255,255,.06)"; g.stroke();
+  }
+};
+
+/* ------------------------------ boot ------------------------------- */
+render(); drawBoard(); raf.start();
+editor.focus();
+
+/* --------------------- headless test autopilot -------------------- *
+ * ?autotype=1 types a sample at fake cadence, dumps metrics to #test-out *
+ * ------------------------------------------------------------------ */
+(function(){
+  var q = new URLSearchParams(location.search);
+  if (q.get("autotype") !== "1") return;
+  var sample = "The quick brown fox jumps over the lazy dog while the sleepy cat watches from the mat.\n\nHuman tokens per second is the world's least useful benchmark, and yet here we are, measuring fingers against silicon. Tokens! Colors! Injustice!\n\nSixty tokens a second sounds impressive until you meet an RTX 4090 doing one hundred and twenty while doing absolutely nothing at all.";
+  var i = 0;
+  (function step(){
+    if (i >= sample.length){
+      var t = performance.now();
+      var avg = S.activeMs > 300 ? S.tokens/(S.activeMs/1000) : 0;
+      var out = {
+        chars:S.chars, words:S.words, tokens:S.tokens,
+        cpt:+(S.chars/S.tokens).toFixed(3),
+        avgTps:+avg.toFixed(2), peakTps:+S.peak.toFixed(2),
+        bestBurst:bestBurst(), board:loadBoard().length,
+        classOf:classFor(avg), activeSeconds:+(S.activeMs/1000).toFixed(1),
+        sections:paint.querySelectorAll(".sect").length,
+        tokSpans:paint.querySelectorAll(".tok").length,
+        hues: Array.from(paint.querySelectorAll(".tok")).slice(0,6).map(function(s){ return s.style.getPropertyValue("--h"); })
+      };
+      $("test-out").textContent = "HT_JSON::" + JSON.stringify(out);
+      document.title = "HT_DONE " + JSON.stringify(out);
+      return;
+    }
+    var chunk = 1 + (i % 7 === 3 ? 1 : 0);
+    editor.value = sample.slice(0, i += chunk);
+    editor.dispatchEvent(new Event("input",{bubbles:true}));
+    setTimeout(step, 28);
+  })();
+})();
+</script>
+</body>
+</html>
