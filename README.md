@@ -100,6 +100,16 @@ A real Time Pet Rock monitor for Jeff The Pet Rock.
 
 👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/PetRock/jeff.html) 
 
+### Human Tokens (Single File Sim)
+A really dumb project for a human to be able to understand how many tok/s they type.
+- type what ever you want
+- calculates your tok/s and other metrics
+- will roast you if you dont type fast enough
+  
+![human tokens](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/HumanTokens/human-tokens.png)
+
+👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/HumanTokens/human_tokens.html) 
+
 
 ---
 
