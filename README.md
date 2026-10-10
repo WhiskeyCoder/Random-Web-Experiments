@@ -110,7 +110,17 @@ A really dumb project for a human to be able to understand how many tok/s they t
 
 👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/HumanTokens/human_tokens.html) 
 
+### Web eBook Reader (Single File)
+A really simple web based eBook viewer and reader.
+- browser based
+- privacy focused
+- view and read your books on your browser
+- No need to host or install anything
+- Supports ePub, PDF ...etc
+  
+![human tokens](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Ebook-Shelf/ebook-shelf.html)
 
+👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Ebook-Shelf/ebook-shelf.html) 
 ---
 
 ## Philosophy
