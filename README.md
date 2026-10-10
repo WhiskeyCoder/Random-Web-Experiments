@@ -118,7 +118,7 @@ A really simple web based eBook viewer and reader.
 - No need to host or install anything
 - Supports ePub, PDF ...etc
   
-![human tokens](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Ebook-Shelf/ebook-shelf.html)
+![ebookreader](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Ebook-Shelf/shelf-ebook-library.png)
 
 👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Ebook-Shelf/ebook-shelf.html) 
 ---
