@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#f2ece0" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0f0e0c" media="(prefers-color-scheme: dark)" />
+<title>Shelf · E-book Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{
+  --paper:#f2ece0; --paper-2:#e9e1d1; --card:#fbf8f1;
+  --ink:#241c15; --ink-soft:#6a5b4c; --line:#ddd3bf;
+  --accent:#cf4a2b; --accent-dk:#a8371e; --gold:#d99a2b; --teal:#2f7d6b;
+  --shadow:0 1px 2px rgba(36,28,21,.05), 0 14px 34px -14px rgba(36,28,21,.3);
+  --topbar-bg:rgba(242,236,224,.82); --status-bg:rgba(251,248,241,.75);
+  --modal-scrim:rgba(30,24,17,.5); --hover-border:#c9bda6;
+  --cover-placeholder:#e7ddca; --input-bg:#fff;
+  --reader-shell:#efe9dd; --reader-chrome:#f7f2e8; --reader-stage:#e4dccd;
+  --toast-bg:#241c15; --toast-fg:#fff;
+  --grid-stroke:rgba(36,28,21,.05); --search-glow:rgba(207,74,43,.14);
+  --dropzone-bg:rgba(251,248,241,.6); --dropzone-border:#c9bda6;
+  --page-gutter:clamp(18px,2.8vw,44px);
+  --edge-buffer:28px;
+  --scroll-track:calc(var(--page-gutter) + var(--edge-buffer));
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0f0e0c; --paper-2:#1a1815; --card:#1c1916;
+  --ink:#ebe4da; --ink-soft:#9a9084; --line:#3a3530;
+  --accent:#e86548; --accent-dk:#cf4a2b; --gold:#e0a832; --teal:#3d9a82;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+  --topbar-bg:rgba(15,14,12,.88); --status-bg:rgba(20,18,16,.92);
+  --modal-scrim:rgba(0,0,0,.72); --hover-border:#5a524a;
+  --cover-placeholder:#2a2622; --input-bg:#141210;
+  --reader-shell:#161412; --reader-chrome:#1e1b18; --reader-stage:#12100e;
+  --toast-bg:#ebe4da; --toast-fg:#141210;
+  --grid-stroke:rgba(255,255,255,.04); --search-glow:rgba(232,101,72,.22);
+  --dropzone-bg:rgba(28,25,22,.85); --dropzone-border:#4a433c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'IBM Plex Sans',system-ui,sans-serif; color:var(--ink); background:var(--paper);
+  height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
+}
+body.has-library .hero{display:none}
+body.has-library .toolbar{padding-top:14px}
+/* ambient layered background */
+.bg{position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(120% 90% at 85% -10%, #f7efe1 0%, transparent 55%),
+  radial-gradient(90% 80% at -10% 110%, #ece3d2 0%, transparent 60%), var(--paper);}
+[data-theme="dark"] .bg{background:
+  radial-gradient(120% 90% at 85% -10%, #1f1a16 0%, transparent 55%),
+  radial-gradient(90% 80% at -10% 110%, #141210 0%, transparent 60%), var(--paper);}
+.bg::before{content:"";position:absolute;inset:0;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");}
+[data-theme="dark"] .bg::before{opacity:.35}
+.bg::after{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpath d='M8 5v6M5 8h6' stroke='%23241c15' stroke-opacity='.05'/%3E%3C/svg%3E");}
+[data-theme="dark"] .bg::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpath d='M8 5v6M5 8h6' stroke='%23ffffff' stroke-opacity='.04'/%3E%3C/svg%3E");}
+.wrap{width:100%;max-width:none;margin:0;padding:0 var(--page-gutter);box-sizing:border-box}
+
+/* ---------- topbar ---------- */
+.topbar{position:sticky;top:0;z-index:40;background:var(--topbar-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:18px;height:70px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink)}
+.mark{width:40px;height:40px;display:grid;place-items:center;background:linear-gradient(150deg,#3a2c20,#241c15);border-radius:9px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),var(--shadow)}
+.mark svg{width:24px;height:24px}
+.brand b{font-family:'Bricolage Grotesque';font-weight:800;font-size:23px;letter-spacing:-.02em;line-height:1}
+.brand small{display:block;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+.search{flex:1;display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:0 13px;height:44px;box-shadow:inset 0 1px 2px rgba(36,28,21,.04)}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--search-glow)}
+.search svg{width:19px;height:19px;color:var(--ink-soft);flex:none}
+.search input{border:0;background:none;outline:none;font-family:inherit;font-size:15px;width:100%;color:var(--ink)}
+.search .clear{border:0;background:none;cursor:pointer;color:var(--ink-soft);font-size:20px;line-height:1;padding:0 4px;display:none}
+.search.has .clear{display:block}
+.top-actions{display:flex;align-items:center;gap:9px}
+.status-bar{
+  flex-shrink:0;border-bottom:1px solid var(--line);background:var(--status-bg);
+  font-size:12.5px;color:var(--ink-soft);padding:7px var(--page-gutter);display:flex;align-items:center;gap:12px;min-height:36px;
+}
+.status-bar.loading{color:var(--accent-dk)}
+.status-bar .folder-name{color:var(--ink);font-weight:600;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-prog{flex:1;max-width:280px;height:4px;background:var(--paper-2);border-radius:999px;overflow:hidden}
+.status-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--accent));transition:width .25s}
+main.wrap{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:0;width:100%}
+main.wrap>.hero,main.wrap>.toolbar{padding-left:var(--page-gutter);padding-right:var(--page-gutter)}
+.library-scroll{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;
+  scrollbar-gutter:stable;
+  padding:0 0 12px;
+}
+#content{
+  box-sizing:border-box;width:100%;max-width:100%;
+  padding-left:var(--page-gutter);
+  padding-right:var(--scroll-track);
+}
+.library-scroll::-webkit-scrollbar{width:11px}
+.library-scroll::-webkit-scrollbar-track{background:transparent;margin:6px 4px 6px 0}
+.library-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px;border:3px solid transparent;background-clip:padding-box}
+.library-scroll::-webkit-scrollbar-thumb:hover{background:var(--ink-soft);background-clip:padding-box;border:3px solid transparent}
+.card-info{
+  position:absolute;bottom:8px;left:8px;z-index:5;width:30px;height:30px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.35);background:rgba(36,28,21,.55);color:#fff;cursor:pointer;
+  display:grid;place-items:center;opacity:0;transition:.15s;backdrop-filter:blur(4px);
+}
+.card:hover .card-info{opacity:1}
+.card-info svg{width:15px;height:15px}
+.search-hint{font-size:11px;color:var(--ink-soft);margin-left:4px;white-space:nowrap;display:none}
+@media(min-width:900px){.search-hint{display:inline}}
+
+/* ---------- buttons ---------- */
+.btn{font-family:'IBM Plex Sans';font-weight:600;font-size:13.5px;border-radius:10px;padding:10px 15px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:.18s transform,.18s background,.18s box-shadow,color}
+.btn svg{width:17px;height:17px}
+.btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px rgba(207,74,43,.7)}
+.btn.primary:hover{transform:translateY(-2px);background:var(--accent-dk)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--card);border-color:var(--hover-border)}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink);transition:.18s}
+.icon-btn:hover{transform:translateY(-2px);border-color:var(--hover-border)}
+.icon-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.icon-btn svg{width:19px;height:19px}
+
+/* ---------- hero / stats ---------- */
+.hero{padding:clamp(30px,5vw,54px) 0 8px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:26px}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--accent)}
+.hero h1{font-family:'Fraunces';font-weight:500;font-size:clamp(34px,6vw,62px);line-height:.98;letter-spacing:-.02em;margin:14px 0 0}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 16px;min-width:98px;box-shadow:var(--shadow)}
+.stat .n{font-family:'Bricolage Grotesque';font-weight:700;font-size:26px;line-height:1;letter-spacing:-.02em}
+.stat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--ink-soft);margin-top:5px}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:22px 0 6px;border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Sans';font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink-soft);transition:.16s}
+.chip:hover{color:var(--ink);border-color:var(--hover-border);transform:translateY(-1px)}
+.chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+[data-theme="dark"] .chip.active{color:var(--paper)}
+.spacer{flex:1}
+.select{font-family:'IBM Plex Sans';font-weight:500;font-size:13.5px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;color-scheme:light dark}
+.detail-body input[type="text"]{background:var(--input-bg);color:var(--ink)}
+
+/* ---------- grid / cards ---------- */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,158px),1fr));
+  gap:26px 20px;padding:38px 0 48px;width:100%;
+}
+.card{position:relative;background:none;border:0;padding:0 2px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;transition:.2s transform,.2s filter}
+.cover-wrap{position:relative;width:100%;aspect-ratio:3/4.15;border-radius:6px 8px 8px 6px;background:var(--cover-placeholder);box-shadow:var(--shadow);overflow:hidden;transform-origin:center bottom;transition:.28s cubic-bezier(.2,.9,.3,1)}
+.cover-wrap::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(rgba(0,0,0,.28),rgba(0,0,0,.06));z-index:3}
+.cover-wrap img{width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1}
+.cover-wrap.has-cover .cover-fallback{opacity:0;pointer-events:none}
+.cover-fallback{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px 12px;color:#fff;background-size:cover;background-position:center}
+.cf-title{font-family:'Fraunces';font-weight:600;font-size:15.5px;line-height:1.18;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.cf-author{font-size:11px;opacity:.92;text-transform:uppercase;letter-spacing:.06em}
+.card:hover .cover-wrap{transform:translateY(-7px) rotate(-.5deg);box-shadow:0 3px 6px rgba(0,0,0,.12),0 26px 44px -18px rgba(0,0,0,.45)}
+.card:hover .cover-wrap::after{opacity:.9}
+.cover-wrap::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%);transform:translateX(-120%);transition:.6s;z-index:2}
+.card:hover .cover-wrap::after{transform:translateX(120%)}
+.badge{position:absolute;top:8px;right:8px;z-index:4;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:rgba(36,28,21,.82);color:#fff}
+.badge.pdf{background:var(--accent)} .badge.epub{background:var(--teal)}
+.progress{position:absolute;left:0;right:0;bottom:0;height:4px;z-index:4;background:rgba(36,28,21,.15)}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .5s}
+.card-meta{margin-top:11px;text-align:center;width:100%}
+.card-title{font-family:'Fraunces';font-weight:600;font-size:14.5px;line-height:1.2;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-author{font-size:12px;color:var(--ink-soft);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stars{color:var(--gold);font-size:12px;margin-top:5px;height:14px}
+.tagrow{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.mini-tag{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--paper-2);color:var(--ink-soft)}
+
+/* ---------- empty state ---------- */
+.empty{text-align:center;padding:64px 20px 80px}
+.empty .big{font-family:'Fraunces';font-size:clamp(30px,5vw,46px);line-height:1.05;letter-spacing:-.02em;margin-bottom:14px}
+.empty p{color:var(--ink-soft);max-width:440px;margin:0 auto 26px;font-size:15px;line-height:1.6}
+.dropzone{border:2px dashed var(--dropzone-border);border-radius:18px;padding:34px;background:var(--dropzone-bg);display:flex;flex-direction:column;align-items:center;gap:10px;transition:.2s}
+.dropzone:hover{border-color:var(--accent)}
+.dz-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(150deg,#3a2c20,#241c15);display:grid;place-items:center;color:#fff}
+.dz-icon svg{width:28px;height:28px}
+
+/* ---------- reader modal ---------- */
+.modal{position:fixed;inset:0;z-index:60;display:none;background:var(--modal-scrim);backdrop-filter:blur(4px)}
+.modal.open{display:block}
+.modal.focus-mode{background:var(--reader-shell);backdrop-filter:none}
+.modal.focus-mode .reader{inset:0;border-radius:0;border:none;box-shadow:none;max-height:100vh}
+.reader{position:absolute;inset:clamp(8px,2vw,26px);background:var(--reader-shell);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.7);border:1px solid var(--line);transition:inset .2s,border-radius .2s}
+.reader-top{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--reader-chrome);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.reader-title{font-family:'Fraunces';font-weight:600;font-size:17px;line-height:1.15;min-width:0}
+.reader-sub{font-size:12px;color:var(--ink-soft)}
+.reader-body{flex:1;display:flex;overflow:hidden;background:var(--reader-stage)}
+.pdf-stage{flex:1;position:relative;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:20px var(--page-gutter);min-height:0;-webkit-overflow-scrolling:touch}
+.pdf-page-wrap{position:relative;display:inline-block;margin-bottom:24px;box-shadow:0 8px 30px -8px rgba(0,0,0,.5);border-radius:2px;line-height:0}
+.pdf-page{display:block;background:#fff;border-radius:2px}
+.textLayer{position:absolute;inset:0;overflow:hidden;line-height:1;pointer-events:auto}
+.textLayer span{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
+.textLayer ::selection{background:rgba(47,125,107,.45)}
+.epub-stage{flex:1;overflow:hidden;background:var(--reader-chrome);padding:0;min-height:0;display:flex;flex-direction:column}
+.epub-content{flex:1;min-height:0;max-width:680px;width:100%;margin:0 auto;font-family:'Fraunces',Georgia,serif;line-height:1.75;color:#2a231c}
+.modal.focus-mode .epub-content{max-width:min(920px,100%)}
+.epub-content iframe,.epub-content *{user-select:text!important;-webkit-user-select:text!important}
+.epub-content img{max-width:100%;height:auto;border-radius:4px;margin:14px 0}
+.zoom-ind{font-size:12px;font-weight:600;color:var(--ink-soft);min-width:42px;text-align:center}
+.reader-bar{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--reader-chrome);border-top:1px solid var(--line);flex-wrap:wrap}
+.nav-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink)}
+.nav-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--hover-border)}
+.nav-btn:disabled{opacity:.35;cursor:default}
+.nav-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--paper-2)}
+.page-ind{font-size:13px;font-weight:600;min-width:74px;text-align:center;color:var(--ink-soft)}
+.fontctl{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:9px;padding:2px;background:var(--card)}
+.fontctl button{width:30px;height:30px;border:0;background:none;cursor:pointer;font-family:'Bricolage Grotesque';font-weight:700;color:var(--ink);border-radius:6px}
+.fontctl button:hover{background:var(--paper-2)}
+.theme-dot{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.theme-dot.active{border-color:var(--ink)}
+[data-theme="dark"] .theme-dot.active{border-color:var(--accent)}
+.t-paper{background:#f7f2e8}.t-sepia{background:#efe3c9}.t-dark{background:#1b1a17}
+
+/* ---------- detail modal ---------- */
+.detail{position:absolute;inset:0;display:flex;background:var(--modal-scrim);backdrop-filter:blur(4px)}
+.detail-card{margin:auto;width:min(680px,94vw);max-height:92vh;overflow:auto;background:var(--card);border-radius:18px;display:flex;box-shadow:0 40px 90px -30px rgba(0,0,0,.7)}
+.detail-cover{width:230px;flex:none;border-radius:18px 0 0 18px;background:var(--cover-placeholder);position:relative;overflow:hidden}
+.detail-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.detail-body{padding:24px 26px;flex:1;min-width:0}
+.d-title{font-family:'Fraunces';font-weight:600;font-size:25px;line-height:1.1;letter-spacing:-.01em;margin:0 0 3px}
+.d-author{color:var(--ink-soft);margin-bottom:14px}
+.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;font-size:13px;margin-bottom:16px}
+.meta-grid .k{color:var(--ink-soft)}
+.d-progress{margin:14px 0}
+.d-progress .lbl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+.pbar{height:8px;border-radius:999px;background:var(--paper-2);overflow:hidden}
+.pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--accent));border-radius:999px;transition:width .5s}
+.d-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tag-pill{font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;background:var(--paper-2);color:var(--ink)}
+.d-notes textarea{width:100%;min-height:78px;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:13.5px;resize:vertical;background:var(--input-bg);color:var(--ink)}
+.d-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+
+/* ---------- toast / drop overlay ---------- */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(30px);background:var(--toast-bg);color:var(--toast-fg);padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;z-index:90;opacity:0;pointer-events:none;transition:.3s;box-shadow:var(--shadow)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.drop-overlay{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(207,74,43,.12);backdrop-filter:blur(3px)}
+.drop-overlay.show{display:grid}
+.drop-overlay .box{border:3px dashed var(--accent);background:var(--card);padding:50px 60px;border-radius:20px;font-family:'Fraunces';font-size:28px;text-align:center;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{transform:scale(1.03)}}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(16px);transition:.55s cubic-bezier(.2,.8,.3,1)}
+.reveal.in{opacity:1;transform:none}
+
+@media(max-width:640px){
+  .brand small{display:none}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:20px 14px}
+  .detail-card{flex-direction:column;width:min(94vw,560px)}
+  .detail-cover{width:100%;height:230px;border-radius:18px 18px 0 0}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#" onclick="return false">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#f2ece0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A1.5 1.5 0 0 1 4.5 4H9a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5.5A1.5 1.5 0 0 0 19.5 4H15a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5h7z"/></svg></span>
+      <span><b>Shelf</b><small>E-book Library</small></span>
+    </a>
+    <div class="search" id="searchBox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="text" placeholder="Search titles, authors, tags, full text…" autocomplete="off"/>
+      <button class="clear" id="searchClear" title="Clear">×</button>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeToggle" type="button" title="Dark mode" aria-label="Toggle dark mode" aria-pressed="false"><svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" hidden><path d="M20 14.5A7.5 7.5 0 0 1 9.5 4 6 6 0 1 0 20 14.5z"/></svg></button>
+      <button class="icon-btn" id="exportBtn" title="Export catalog (JSON)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
+      <button class="icon-btn" id="importBtn" title="Import catalog (JSON)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg></button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden/>
+      <button class="icon-btn" id="refreshBtn" title="Rescan folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      <button class="btn primary" id="openBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open folder</button>
+      <input type="file" id="folderFallback" webkitdirectory multiple hidden/>
+    </div>
+  </div>
+</header>
+<div class="status-bar" id="statusBar"><span id="statusText">Pick a folder of PDFs and EPUBs to begin.</span><span class="folder-name" id="folderLabel" hidden></span><div class="status-prog" id="progressBar" hidden><i id="progressFill"></i></div></div>
+
+<main class="wrap">
+  <section class="hero reveal" id="hero">
+    <div>
+      <span class="eyebrow">Your personal library</span>
+      <h1 id="heroTitle">A quiet place for<br><em>every book you own.</em></h1>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="toolbar reveal" id="toolbar" style="display:none">
+    <div class="chips" id="filterChips"></div>
+    <div class="spacer"></div>
+    <select class="select" id="sortSelect">
+      <option value="title">Sort · Title A–Z</option>
+      <option value="author">Sort · Author A–Z</option>
+      <option value="recent">Sort · Recently added</option>
+      <option value="progress">Sort · Progress</option>
+      <option value="rating">Sort · Rating</option>
+    </select>
+  </section>
+
+  <div class="library-scroll" id="libraryScroll"><div id="content"></div></div>
+</main>
+
+<!-- Reader -->
+<div class="modal" id="readerModal">
+  <div class="reader">
+    <div class="reader-top">
+      <div style="min-width:0;flex:1">
+        <div class="reader-title" id="rTitle"></div>
+        <div class="reader-sub" id="rSub"></div>
+      </div>
+      <button class="icon-btn" id="rFocusBtn" type="button" title="Focus reading (F)" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      <button class="icon-btn" id="rClose" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="reader-body">
+      <div class="pdf-stage" id="pdfStage"></div>
+      <div class="epub-stage" id="epubStage"><div class="epub-content" id="epubContent"></div></div>
+    </div>
+    <div class="reader-bar">
+      <button class="nav-btn" id="rPrev" title="Previous (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+      <span class="page-ind" id="rPage">–</span>
+      <button class="nav-btn" id="rNext" title="Next (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+      <div class="spacer"></div>
+      <button class="nav-btn" id="rZoomOut" title="Zoom out (−)">−</button>
+      <span class="zoom-ind" id="rZoomInd">100%</span>
+      <button class="nav-btn" id="rZoomIn" title="Zoom in (+)">+</button>
+      <button class="nav-btn" id="rZoomFit" type="button" title="Fit width (W)" aria-pressed="true">↔</button>
+      <button class="nav-btn" id="rZoomPage" type="button" title="Fit page to screen (P)" aria-pressed="false">⤢</button>
+      <div class="fontctl" id="fontCtl">
+        <button data-f="-1" title="Smaller text">A−</button>
+        <button data-f="1" title="Larger text">A+</button>
+      </div>
+      <span style="width:8px"></span>
+      <button class="theme-dot t-paper active" data-theme="paper" title="Paper"></button>
+      <button class="theme-dot t-sepia" data-theme="sepia" title="Sepia"></button>
+      <button class="theme-dot t-dark" data-theme="dark" title="Dark"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail -->
+<div class="modal" id="detailModal">
+  <div class="detail"><div class="detail-card" id="detailCard"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="drop-overlay" id="dropOverlay"><div class="box">Drop your books here 📚</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const LS_KEY='shelf.catalog.v2';
+const UI_THEME_KEY='shelf.uiTheme';
+const DB_NAME='shelf-library';
+const DB_VERSION=1;
+const supportsFSA='showDirectoryPicker' in window;
+
+let dbPromise=null;
+let directoryHandle=null;
+let books=[];               // {id,relativePath,name,title,author,type,size,lastModified,added,coverUrl?,fileHandle?,sessionFile?}
+let meta={};
+let coverUrls=new Map();
+let filter='all', sortKey='title', query='';
+let pdfDoc=null, epubRendition=null, epubBookInst=null, readerBook=null, rPage=1, rTotal=0, rFont=18, rTheme='paper', rZoom=1, pdfFitMode='width';
+const THEMES={paper:{bg:'#f7f2e8',fg:'#2a231c'},sepia:{bg:'#efe3c9',fg:'#4a3a20'},dark:{bg:'#1b1a17',fg:'#d8d2c6'}};
+
+function loadMeta(){ try{meta=JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){meta={}} }
+function saveMeta(){ localStorage.setItem(LS_KEY, JSON.stringify(meta)); }
+const getMeta=id=> meta[id] || (meta[id]={progress:0,rating:0,tags:[],notes:'',lastRead:null});
+
+function openDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise=new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+      if(!db.objectStoreNames.contains('covers')) db.createObjectStore('covers');
+      if(!db.objectStoreNames.contains('text')) db.createObjectStore('text');
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+  return dbPromise;
+}
+async function idbGet(store,key){ const db=await openDB(); return new Promise((res,rej)=>{ const r=db.transaction(store,'readonly').objectStore(store).get(key); r.onsuccess=()=>res(r.result??null); r.onerror=()=>rej(r.error); }); }
+async function idbSet(store,key,val){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(val,key); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
+
+function setStatus(msg,loading=false){
+  $('#statusText').textContent=msg;
+  $('#statusBar').classList.toggle('loading',loading);
+}
+function setProgress(pct){ const bar=$('#progressBar'), fill=$('#progressFill'); if(pct<0){ bar.hidden=true; fill.style.width='0%'; return; } bar.hidden=false; fill.style.width=Math.min(100,pct)+'%'; }
+
+function applyUiTheme(theme){
+  const t=theme==='dark'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem(UI_THEME_KEY,t);
+  const btn=$('#themeToggle');
+  const sun=$('#themeIconSun');
+  const moon=$('#themeIconMoon');
+  if(btn){
+    btn.setAttribute('aria-pressed',t==='dark'?'true':'false');
+    btn.title=t==='dark'?'Light mode':'Dark mode';
+  }
+  if(sun) sun.hidden=t==='dark';
+  if(moon) moon.hidden=t!=='dark';
+  const meta=document.querySelector('meta[name="theme-color"]:not([media])')||document.createElement('meta');
+  if(!meta.parentNode){ meta.name='theme-color'; document.head.appendChild(meta); }
+  meta.content=t==='dark'?'#0f0e0c':'#f2ece0';
+}
+function loadUiTheme(){
+  let t=localStorage.getItem(UI_THEME_KEY);
+  if(t!=='dark'&&t!=='light'){
+    t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  }
+  applyUiTheme(t);
+}
+function toggleUiTheme(){ applyUiTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+
+/* ============================ helpers ============================ */
+const $=s=>document.querySelector(s);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
+function fmtSize(b){ if(!b) return '—'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){h=(h<<5)-h+s.charCodeAt(i);h|=0;} return Math.abs(h); }
+const PALETTE=[['#7a2e1f','#b4532a'],['#1f4d43','#3c8a6f'],['#2b3a67','#5a6fb0'],['#5a3a1e','#9c6b34'],['#3a2c4a','#7a5aa0'],['#123a4a','#2f7d95'],['#4a1f2e','#8a3a52'],['#2f3a1e','#6b8a3a']];
+function coverStyle(name){ const p=PALETTE[hashStr(name)%PALETTE.length]; return `background:linear-gradient(150deg,${p[0]},${p[1]})`; }
+
+/* ============================ folder & files ============================ */
+function bookId(relativePath,size){ return relativePath.replace(/\\/g,'/')+'|'+size; }
+function getExt(name){ const i=name.lastIndexOf('.'); return i>=0?name.slice(i).toLowerCase():''; }
+
+async function detectType(file){
+  const ext=getExt(file.name);
+  if(ext==='.pdf') return 'pdf';
+  if(ext==='.epub') return 'epub';
+  if(file.type==='application/pdf') return 'pdf';
+  if(file.type==='application/epub+zip'){
+    const b=new Uint8Array(await file.slice(0,4).arrayBuffer());
+    if(b[0]===0x50&&b[1]===0x4b) return 'epub';
+  }
+  return null;
+}
+
+async function collectBookFiles(dirHandle, base=''){
+  const out=[];
+  for await (const entry of dirHandle.values()){
+    const rel=base?base+'/'+entry.name:entry.name;
+    if(entry.kind==='directory') out.push(...await collectBookFiles(entry,rel));
+    else if(entry.kind==='file'){
+      const ext=getExt(entry.name);
+      if(ext==='.pdf'||ext==='.epub') out.push({handle:entry,relativePath:rel});
+    }
+  }
+  return out;
+}
+
+async function getBookFile(book){
+  if(book.fileHandle) return book.fileHandle.getFile();
+  if(book.sessionFile) return book.sessionFile;
+  throw new Error('No file access — re-open the folder.');
+}
+
+function coverStoreKey(book){ return `${book.id}|${book.lastModified||0}`; }
+
+async function ensureCoverUrl(book){
+  if(book.coverUrl) return book.coverUrl;
+  const blob=await idbGet('covers',coverStoreKey(book));
+  if(blob){
+    const url=URL.createObjectURL(blob);
+    coverUrls.set(book.id,url);
+    book.coverUrl=url;
+    return url;
+  }
+  return null;
+}
+
+function revokeCoverUrls(){
+  coverUrls.forEach(u=>URL.revokeObjectURL(u));
+  coverUrls.clear();
+  books.forEach(b=>{ b.coverUrl=null; });
+}
+
+async function selectDirectory(){
+  if(supportsFSA){
+    try{
+      directoryHandle=await window.showDirectoryPicker({mode:'read'});
+      await idbSet('handles','main',directoryHandle);
+      $('#folderLabel').textContent=directoryHandle.name;
+      $('#folderLabel').hidden=false;
+      await loadDirectory(true);
+    }catch(err){ if(err.name!=='AbortError') toast(err.message); }
+    return;
+  }
+  $('#folderFallback').click();
+}
+
+async function tryRestoreDirectory(){
+  if(!supportsFSA){ setStatus('Folder picker needs Chrome or Edge. Use “Open folder” or drag files.'); return; }
+  setStatus('Restoring library folder…',true);
+  try{
+    const handle=await idbGet('handles','main');
+    if(!handle){ setStatus('Pick a folder of PDFs and EPUBs to begin.'); return; }
+    let perm=await handle.queryPermission({mode:'read'});
+    if(perm!=='granted') perm=await handle.requestPermission({mode:'read'});
+    if(perm!=='granted'){ setStatus('Permission needed — click Open folder.'); return; }
+    directoryHandle=handle;
+    $('#folderLabel').textContent=handle.name;
+    $('#folderLabel').hidden=false;
+    await loadDirectory(false);
+  }catch(e){
+    setStatus('Pick a folder of PDFs and EPUBs to begin.');
+  }
+}
+
+async function loadDirectory(showToast){
+  if(!directoryHandle) return;
+  revokeCoverUrls();
+  books=[];
+  setStatus('Scanning folder…',true);
+  setProgress(0);
+  try{
+    const raw=await collectBookFiles(directoryHandle);
+    let i=0;
+    for(const item of raw){
+      const file=await item.handle.getFile();
+      const type=await detectType(file);
+      if(!type){ i++; setProgress((i/raw.length)*100); continue; }
+      const id=bookId(item.relativePath,file.size);
+      const {title,author}=parseMeta(file.name,type);
+      const coverBlob=await idbGet('covers',bookId(item.relativePath,file.size)+'|'+file.lastModified);
+      let coverUrl=null;
+      if(coverBlob){
+        coverUrl=URL.createObjectURL(coverBlob);
+        coverUrls.set(id,coverUrl);
+      }
+      books.push({
+        id, relativePath:item.relativePath, name:file.name, title, author, type,
+        size:file.size, lastModified:file.lastModified, added:file.lastModified,
+        coverUrl, fileHandle:item.handle, textReady:!!(await idbGet('text',id)),
+      });
+      i++;
+      setProgress((i/raw.length)*100);
+    }
+    document.body.classList.toggle('has-library',books.length>0);
+    render();
+    setProgress(-1);
+    setStatus(books.length?`${books.length} books · ${directoryHandle.name}`:'No PDF/EPUB files in this folder.');
+    if(showToast) toast(`Loaded ${books.length} book${books.length===1?'':'s'}`);
+    indexMissingTextInBackground();
+    hydrateMissingCoversInBackground();
+  }catch(e){
+    console.error(e);
+    setProgress(-1);
+    setStatus('Could not read folder.');
+    toast('Could not read folder.');
+  }
+}
+
+async function addSessionFiles(fileList){
+  let added=0;
+  for(const file of fileList){
+    const type=await detectType(file);
+    if(!type) continue;
+    const id=bookId(file.webkitRelativePath||file.name,file.size);
+    if(books.some(b=>b.id===id)) continue;
+    const {title,author}=parseMeta(file.name,type);
+    books.push({
+      id, relativePath:file.webkitRelativePath||file.name, name:file.name, title, author, type,
+      size:file.size, lastModified:file.lastModified, added:Date.now(),
+      coverUrl:null, sessionFile:file, textReady:false,
+    });
+    added++;
+  }
+  if(!added){ toast('No new PDF/EPUB files found.'); return; }
+  document.body.classList.add('has-library');
+  render();
+  setStatus(`${books.length} books (session — re-open folder after refresh)`);
+  toast(`Added ${added} book${added===1?'':'s'}`);
+  hydrateMissingCoversInBackground();
+  indexMissingTextInBackground();
+}
+
+async function extractPdfText(pdf){
+  let out=''; const max=Math.min(pdf.numPages,400);
+  for(let i=1;i<=max;i++){ try{ const p=await pdf.getPage(i); const tc=await p.getTextContent(); out+=tc.items.map(x=>x.str).join(' ')+' '; }catch(e){} }
+  return out.slice(0,600_000);
+}
+function resolveEpubPath(baseDir,href){
+  const parts=(baseDir?baseDir.replace(/\\/g,'/').split('/').filter(Boolean):[]);
+  for(const seg of href.replace(/\\/g,'/').split('/')){
+    if(seg==='..'||seg===''){ if(seg==='..') parts.pop(); }
+    else if(seg!=='.') parts.push(seg);
+  }
+  return parts.join('/');
+}
+function zipGetEntry(zip,path){
+  const tries=[path,path.replace(/^\//,''),decodeURIComponent(path)];
+  for(const p of tries){ const f=zip.file(p); if(f) return f; }
+  const lower=path.toLowerCase();
+  for(const name of Object.keys(zip.files||{})){
+    if(name.toLowerCase()===lower) return zip.file(name);
+  }
+  return null;
+}
+function parseOpfManifest(opf){
+  const items=new Map();
+  const re=/<item\b([^>]*?)\/?>/gi;
+  let m;
+  while((m=re.exec(opf))){
+    const attrs=m[1];
+    const id=attrs.match(/\bid\s*=\s*["']([^"']+)["']/i)?.[1];
+    const href=attrs.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1];
+    const mediaType=attrs.match(/\bmedia-type\s*=\s*["']([^"']+)["']/i)?.[1];
+    const properties=attrs.match(/\bproperties\s*=\s*["']([^"']+)["']/i)?.[1];
+    if(id&&href) items.set(id,{id,href,mediaType,properties:properties||''});
+  }
+  return items;
+}
+async function readOpf(zip){
+  const mf=await zip.file('META-INF/container.xml')?.async('string');
+  if(!mf) return null;
+  const opfPath=mf.match(/full-path\s*=\s*["']([^"']+)["']/i)?.[1];
+  if(!opfPath) return null;
+  const opf=await zip.file(opfPath)?.async('string');
+  if(!opf) return null;
+  const dir=opfPath.includes('/')?opfPath.split('/').slice(0,-1).join('/'):'';
+  return {opf,dir,items:parseOpfManifest(opf)};
+}
+
+async function imageHrefFromCoverHtml(zip,dir,href){
+  const path=resolveEpubPath(dir,href);
+  const entry=zipGetEntry(zip,path);
+  if(!entry) return null;
+  const html=await entry.async('string');
+  const htmlDir=path.includes('/')?path.split('/').slice(0,-1).join('/'):'';
+  const pick=(raw)=>{
+    if(!raw||/^data:/i.test(raw)) return null;
+    return resolveEpubPath(htmlDir,raw.replace(/^\//,''));
+  };
+  const imgSrc=html.match(/<img[^>]+src\s*=\s*["']([^"']+)["']/i)?.[1];
+  if(imgSrc) return pick(imgSrc);
+  const svgHref=html.match(/<image[^>]+(?:xlink:)?href\s*=\s*["']([^"']+)["']/i)?.[1];
+  if(svgHref) return pick(svgHref);
+  const linkImg=html.match(/<link[^>]+rel\s*=\s*["'][^"']*cover[^"']*["'][^>]+href\s*=\s*["']([^"']+)["']/i)?.[1];
+  if(linkImg) return pick(linkImg);
+  return null;
+}
+
+function findEpubCoverHref(opf,items){
+  for(const it of items.values()){
+    if(/cover-image|svg-cover-image/i.test(it.properties)) return it.href;
+  }
+  const propCover=opf.match(/<meta[^>]*\bproperty\s*=\s*["']cover-image["'][^>]*\bcontent\s*=\s*["']([^"']+)["']/i)
+    ||opf.match(/<meta[^>]*\bcontent\s*=\s*["']([^"']+)["'][^>]*\bproperty\s*=\s*["']cover-image["']/i);
+  if(propCover?.[1]&&items.has(propCover[1])) return items.get(propCover[1]).href;
+
+  const linkCover=opf.match(/<link[^>]*\brel\s*=\s*["']cover["'][^>]*\bhref\s*=\s*["']([^"']+)["']/i);
+  if(linkCover?.[1]) return linkCover[1];
+
+  const metaCover=opf.match(/<meta[^>]*\bname\s*=\s*["']cover["'][^>]*\bcontent\s*=\s*["']([^"']+)["']/i)
+    ||opf.match(/<meta[^>]*\bcontent\s*=\s*["']([^"']+)["'][^>]*\bname\s*=\s*["']cover["']/i);
+  if(metaCover?.[1]&&items.has(metaCover[1])) return items.get(metaCover[1]).href;
+
+  for(const it of items.values()){
+    if(it.mediaType?.startsWith('image/')&&/cover/i.test(it.id+' '+it.href)) return it.href;
+  }
+
+  const guide=opf.match(/<reference[^>]*\btype\s*=\s*["']cover["'][^>]*\bhref\s*=\s*["']([^"']+)["']/i)
+    ||opf.match(/<reference[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*\btype\s*=\s*["']cover["']/i);
+  if(guide?.[1]) return guide[1];
+
+  const spine=opf.match(/<spine[^>]*>([\s\S]*?)<\/spine>/i)?.[1];
+  const firstId=spine?.match(/\bidref\s*=\s*["']([^"']+)["']/i)?.[1];
+  if(firstId&&items.has(firstId)){
+    const first=items.get(firstId);
+    if(first.mediaType?.startsWith('image/')) return first.href;
+    if(/cover/i.test(first.id+' '+first.href)) return first.href;
+  }
+  return null;
+}
+
+async function blobFromEpubPath(zip,dir,href){
+  if(!href) return null;
+  const path=resolveEpubPath(dir,href);
+  const entry=zipGetEntry(zip,path);
+  if(!entry) return null;
+  const blob=await entry.async('blob');
+  if(blob.type.startsWith('image/')||/\.(jpe?g|png|gif|webp|svg|jxl)$/i.test(path)) return blob;
+  if(/\.(x?html?)$/i.test(path)){
+    const imgPath=await imageHrefFromCoverHtml(zip,dir,href);
+    if(imgPath){
+      const imgEntry=zipGetEntry(zip,imgPath);
+      if(imgEntry) return imgEntry.async('blob');
+    }
+  }
+  return null;
+}
+
+async function extractEpubCoverBlob(zip){
+  const info=await readOpf(zip);
+  if(info){
+    const href=findEpubCoverHref(info.opf,info.items);
+    const fromOpf=await blobFromEpubPath(zip,info.dir,href);
+    if(fromOpf) return fromOpf;
+  }
+  const names=Object.keys(zip.files||{}).filter(n=>!zip.files[n].dir);
+  const coverFile=names.find(n=>/(^|\/)cover\.(jpe?g|png|gif|webp)$/i.test(n))
+    ||names.find(n=>/(^|\/)cover-image\.(jpe?g|png)$/i.test(n))
+    ||names.find(n=>/(^|\/)images\/cover\.(jpe?g|png)$/i.test(n));
+  if(coverFile) return zip.file(coverFile).async('blob');
+  return null;
+}
+
+async function blobToImage(blob){
+  return new Promise(res=>{
+    const img=new Image();
+    const url=URL.createObjectURL(blob);
+    img.onload=()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); res(null); };
+    img.src=url;
+  });
+}
+
+function canvasToCoverBlob(canvas,maxPixels=900_000){
+  const scale=Math.min(1,Math.sqrt(maxPixels/(canvas.width*canvas.height)));
+  const w=Math.max(1,Math.round(canvas.width*scale));
+  const h=Math.max(1,Math.round(canvas.height*scale));
+  const s=document.createElement('canvas'); s.width=w; s.height=h;
+  s.getContext('2d').drawImage(canvas,0,0,w,h);
+  return new Promise(res=>s.toBlob(res,'image/jpeg',0.88));
+}
+
+async function imageBlobToThumb(blob){
+  if(!blob) return null;
+  const type=(blob.type||'').toLowerCase();
+  if(type.startsWith('image/')&&blob.size<1_200_000){
+    const img=await blobToImage(blob);
+    if(img&&(img.naturalWidth<=720&&img.naturalHeight<=1200)) return blob;
+  }
+  const img=await blobToImage(blob);
+  if(!img) return null;
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth; c.height=img.naturalHeight;
+  c.getContext('2d').drawImage(img,0,0);
+  return canvasToCoverBlob(c);
+}
+
+async function extractPdfCoverBlob(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const page=await pdf.getPage(1);
+  const base=page.getViewport({scale:1});
+  const scale=900/Math.max(base.width,base.height);
+  const vp=page.getViewport({scale});
+  const full=document.createElement('canvas');
+  full.width=vp.width; full.height=vp.height;
+  await page.render({canvasContext:full.getContext('2d'),viewport:vp}).promise;
+  const c=document.createElement('canvas');
+  const ctx=c.getContext('2d');
+  if(base.width/base.height>1.35){
+    c.width=Math.round(vp.width*0.5);
+    c.height=vp.height;
+    ctx.drawImage(full,0,0,vp.width*0.5,vp.height,0,0,c.width,c.height);
+  }else{
+    c.width=vp.width; c.height=vp.height;
+    ctx.drawImage(full,0,0);
+  }
+  return canvasToCoverBlob(c);
+}
+
+async function extractActualCoverBlob(file,type){
+  if(type==='epub'){
+    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+    const raw=await extractEpubCoverBlob(zip);
+    if(raw) return imageBlobToThumb(raw);
+    return null;
+  }
+  if(type==='pdf') return extractPdfCoverBlob(file);
+  return null;
+}
+
+async function hydrateMissingCoversInBackground(){
+  const pending=books.filter(b=>!b.coverUrl);
+  if(!pending.length) return;
+  let done=0;
+  for(const book of pending){
+    try{
+      const ck=coverStoreKey(book);
+      let blob=await idbGet('covers',ck);
+      if(!blob){
+        const file=await getBookFile(book);
+        blob=await extractActualCoverBlob(file,book.type);
+        if(blob) await idbSet('covers',ck,blob);
+      }
+      if(blob){
+        const url=URL.createObjectURL(blob);
+        coverUrls.set(book.id,url);
+        book.coverUrl=url;
+        const wrap=document.querySelector(`.card[data-id="${CSS.escape(book.id)}"] .cover-wrap`);
+        const img=wrap?.querySelector('img');
+        if(img){ img.src=url; wrap.classList.add('has-cover'); }
+      }
+    }catch(e){ console.warn('cover',book.name,e); }
+    done++;
+    if(done%3===0) setStatus(`Loading cover art… ${done}/${pending.length}`,true);
+  }
+  setStatus(books.length?`${books.length} books · ${directoryHandle?.name||'library'}`:`Pick a folder…`);
+}
+
+async function indexMissingTextInBackground(){
+  const pending=books.filter(b=>!b.textReady);
+  if(!pending.length) return;
+  for(const book of pending){
+    if(await idbGet('text',book.id)){ book.textReady=true; continue; }
+    try{
+      const file=await getBookFile(book);
+      let text='';
+      if(book.type==='pdf'){
+        const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+        text=await extractPdfText(pdf);
+      }else{
+        text=await extractEpubText(await JSZip.loadAsync(await file.arrayBuffer()));
+      }
+      if(text) await idbSet('text',book.id,text.slice(0,600_000));
+      book.textReady=true;
+    }catch(e){ console.warn('text index',book.name,e); }
+  }
+}
+async function extractEpubText(zip){
+  try{
+    const mf=await zip.file('META-INF/container.xml').async('string');
+    const opfPath=mf.match(/full-path="([^"]+)"/)[1]; const dir=opfPath.split('/').slice(0,-1).join('/');
+    const opf=await zip.file(opfPath).async('string');
+    const ids=[...opf.matchAll(/id="([^"]+)"/g)].map(m=>m[1]);
+    let spine=[]; const sm=opf.match(/<spine[^>]*>([\s\S]*?)<\/spine>/); if(sm) spine=[...sm[1].matchAll(/idref="([^"]+)"/g)].map(m=>m[1]);
+    const items={}; [...opf.matchAll(/id="([^"]+)"[^>]*href="([^"]+)"/g)].forEach(m=>items[m[1]]=m[2]);
+    let out=''; for(const id of (spine.length?spine:ids)){ if(!items[id])continue; const p=dir+'/'+items[id]; const f=zip.file(p); if(!f)continue; try{ const html=await f.async('string'); out+=html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')+' '; }catch(e){} }
+    return out.slice(0,600_000);
+  }catch(e){ return ''; }
+}
+
+function parseMeta(name,type){
+  let base=name.replace(/\.[^.]+$/,'');
+  const parts=base.split(/[-–—]/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length>=2 && (type==='epub'||/^(the|a|an)\b/i.test(parts[1]))){ return {title:parts[0],author:parts.slice(1).join(' — ')}; }
+  const m=base.match(/^(.*?)[\s_]+by[\s_]+(.+)$/i); if(m) return {title:m[1].trim(),author:m[2].trim()};
+  return {title:base,author:''};
+}
+
+/* ============================ filtering / sorting ============================ */
+function visibleBooks(){
+  let list=books.slice();
+  if(filter==='pdf'||filter==='epub') list=list.filter(b=>b.type===filter);
+  else if(filter==='unread') list=list.filter(b=>!getMeta(b.id).progress||getMeta(b.id).progress<100);
+  else if(filter==='rated') list=list.filter(b=>getMeta(b.id).rating>0);
+
+  const q=query.trim().toLowerCase();
+  if(q){
+    list=list.filter(b=>{
+      if(b.title.toLowerCase().includes(q)||b.name.toLowerCase().includes(q)) return true;
+      if((b.author||'').toLowerCase().includes(q)) return true;
+      if((getMeta(b.id).tags||[]).some(t=>t.toLowerCase().includes(q))) return true;
+      if(b._searchText&&b._searchText.includes(q)) return true;
+      return false;
+    });
+  }
+
+  const mp=id=>getMeta(id);
+  list.sort((a,b)=>{
+    if(sortKey==='title') return a.title.localeCompare(b.title);
+    if(sortKey==='author') return (a.author||'~').localeCompare(b.author||'~');
+    if(sortKey==='recent') return b.added-a.added;
+    if(sortKey==='progress') return mp(b.id).progress-mp(a.id).progress;
+    if(sortKey==='rating') return mp(b.id).rating-mp(a.id).rating;
+  });
+  return list;
+}
+
+/* ============================ rendering ============================ */
+function render(){
+  const has=books.length>0;
+  document.body.classList.toggle('has-library',has);
+  $('#toolbar').style.display=has?'flex':'none';
+  renderStats();
+  if(!has){ renderEmpty(); return; }
+  renderChips();
+  const list=visibleBooks();
+  const grid=$('#content');
+  if(list.length===0){
+    grid.innerHTML=`<div class="empty"><div class="big">Nothing matches.</div><p>Try a different search, or clear the filters above.</p></div>`; return;
+  }
+  let html='<div class="grid">';
+  list.forEach((b,i)=>{ const m=getMeta(b.id);
+    const hasCover=!!b.coverUrl;
+    const cover=hasCover?`<img src="${b.coverUrl}" alt="" loading="lazy">`:'';
+    const fb=`<div class="cover-fallback" style="${coverStyle(b.name)}"><div class="cf-title">${esc(b.title)}</div><div class="cf-author">${esc(b.author||b.type.toUpperCase())}</div></div>`;
+    html+=`<button class="card reveal" data-id="${esc(b.id)}" style="transition-delay:${Math.min(i*28,400)}ms" title="Open · ${esc(b.title)}">
+      <span class="cover-wrap${hasCover?' has-cover':''}">${fb}${cover}
+        <span class="badge ${b.type}">${b.type}</span>
+        <span class="progress"><i style="width:${m.progress||0}%"></i></span>
+        <span class="card-info" data-info="${esc(b.id)}" title="Details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></span>
+      </span>
+      <span class="card-meta">
+        <span class="card-title">${esc(b.title)}</span>
+        <span class="card-author">${esc(b.author||'Unknown author')}</span>
+        ${m.rating?`<span class="stars">${'★'.repeat(m.rating)}${'☆'.repeat(5-m.rating)}</span>`:''}
+        ${(m.tags&&m.tags.length)?`<span class="tagrow">${m.tags.slice(0,3).map(t=>`<span class="mini-tag">${esc(t)}</span>`).join('')}</span>`:''}
+      </span>
+    </button>`;
+  });
+  html+='</div>';
+  grid.innerHTML=html;
+  observeReveals();
+}
+
+let searchDebounce=null;
+async function refreshSearchTextIndex(){
+  const q=query.trim().toLowerCase();
+  if(!q||q.length<3) return;
+  for(const b of books){
+    if(b._searchText) continue;
+    const t=await idbGet('text',b.id);
+    if(t) b._searchText=t.toLowerCase();
+  }
+  render();
+}
+
+function renderStats(){
+  const total=books.length, pdfs=books.filter(b=>b.type==='pdf').length, epubs=total-pdfs;
+  const read=books.filter(b=>getMeta(b.id).progress>=100).length;
+  const avg=books.length? (books.reduce((s,b)=>s+getMeta(b.id).rating,0)/books.filter(b=>getMeta(b.id).rating>0).length||0):0;
+  $('#stats').innerHTML=`
+    <div class="stat"><div class="n">${total}</div><div class="l">Books</div></div>
+    <div class="stat"><div class="n">${pdfs}</div><div class="l">PDF</div></div>
+    <div class="stat"><div class="n">${epubs}</div><div class="l">EPUB</div></div>
+    <div class="stat"><div class="n">${read}</div><div class="l">Finished</div></div>`;
+}
+
+function renderChips(){
+  const chips=[['all','All'],['pdf','PDF'],['epub','EPUB'],['unread','Unfinished'],['rated','Rated']];
+  $('#filterChips').innerHTML=chips.map(([k,l])=>`<button class="chip ${filter===k?'active':''}" data-f="${k}">${l}</button>`).join('');
+}
+
+function renderEmpty(){
+  $('#content').innerHTML=`
+    <div class="empty">
+      <div class="big">Your shelf is empty.</div>
+      <p>Add a folder of PDFs and EPUBs to start building your library. Everything stays on this device — nothing is uploaded.</p>
+      <div class="dropzone" id="dz">
+        <span class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+        <b style="font-family:'Fraunces';font-size:19px">Open a folder of books</b>
+        <span style="color:var(--ink-soft);font-size:13.5px">or drag &amp; drop files anywhere on this page</span>
+      </div>
+    </div>`;
+  $('#dz')?.addEventListener('click',selectDirectory);
+}
+
+/* ============================ reader ============================ */
+async function openReader(id,opts={}){
+  const b=books.find(x=>x.id===id); if(!b) return;
+  readerBook=b;
+  rZoom=1;
+  pdfFitMode='width';
+  updateZoomLabel();
+  syncPdfFitButtons();
+  $('#rTitle').textContent=b.title;
+  $('#rSub').textContent=`${b.author||'Unknown'} · ${b.type.toUpperCase()} · ${fmtSize(b.size)}`;
+  $('#pdfStage').style.display='none';
+  $('#epubStage').style.display='none';
+  $('#epubContent').innerHTML='';
+  $('#fontCtl').style.visibility='hidden';
+  const modal=$('#readerModal');
+  modal.classList.remove('focus-mode');
+  modal.classList.add('open');
+  setReaderFocus(!!opts.focus);
+
+  try{
+    const file=await getBookFile(b);
+    const data=await file.arrayBuffer();
+    if(b.type==='pdf') await openPdf(data,b);
+    else await openEpub(data,b);
+    getMeta(b.id).lastRead=Date.now();
+    saveMeta();
+  }catch(e){
+    console.error(e);
+    toast(e.message||'Could not open this book.');
+    closeReader();
+  }
+}
+
+async function openPdf(data,book){
+  $('#pdfStage').style.display='flex';
+  $('#fontCtl').style.visibility='hidden';
+  const stage=$('#pdfStage');
+  stage.innerHTML='<div style="color:var(--ink-soft);padding:40px">Loading…</div>';
+  pdfDoc=await pdfjsLib.getDocument({data}).promise;
+  rTotal=pdfDoc.numPages;
+  const m=getMeta(book.id);
+  rPage=Math.max(1,Math.min(rTotal,Math.ceil(((m.progress||0)/100)*rTotal)||1));
+  await renderPdfPage(rPage);
+  updateReaderBar();
+}
+
+function pdfViewportScales(page){
+  const stage=$('#pdfStage');
+  const pad=28;
+  const availW=Math.max(120,stage.clientWidth-pad*2);
+  const availH=Math.max(120,stage.clientHeight-pad*2);
+  const base=page.getViewport({scale:1});
+  return{scaleW:availW/base.width,scaleH:availH/base.height};
+}
+function pdfRenderScale(page){
+  const{scaleW,scaleH}=pdfViewportScales(page);
+  if(pdfFitMode==='page') return Math.min(scaleW,scaleH);
+  return scaleW*rZoom;
+}
+
+async function renderPdfPage(page){
+  const p=await pdfDoc.getPage(page);
+  const scale=pdfRenderScale(p);
+  const vp=p.getViewport({scale});
+  const c=document.createElement('canvas');
+  c.width=vp.width; c.height=vp.height; c.className='pdf-page';
+  await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  const wrap=document.createElement('div');
+  wrap.className='pdf-page-wrap';
+  wrap.style.width=vp.width+'px';
+  wrap.style.height=vp.height+'px';
+  wrap.appendChild(c);
+  const textLayer=document.createElement('div');
+  textLayer.className='textLayer';
+  wrap.appendChild(textLayer);
+  const stage=$('#pdfStage');
+  stage.innerHTML='';
+  stage.appendChild(wrap);
+  try{
+    const textContent=await p.getTextContent();
+    if(pdfjsLib.TextLayer){
+      const tl=new pdfjsLib.TextLayer({textContentSource:textContent,container:textLayer,viewport:vp});
+      await tl.render();
+    }
+  }catch(e){ console.warn('text layer',e); }
+  stage.scrollTop=0;
+  rPage=page;
+  const pct=Math.round((page/rTotal)*100);
+  getMeta(readerBook.id).progress=pct;
+  saveMeta();
+  updateCardProgress(readerBook.id,pct);
+  updateReaderBar();
+  updateZoomLabel();
+  syncPdfFitButtons();
+}
+
+async function openEpub(data,book){
+  $('#epubStage').style.display='block';
+  $('#fontCtl').style.visibility='visible';
+  $('#epubContent').innerHTML='';
+  epubBookInst=ePub(data);
+  epubRendition=epubBookInst.renderTo('#epubContent',{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
+  epubRendition.hooks.content.register(contents=>{
+    try{
+      const doc=contents.document;
+      doc.body.style.userSelect='text';
+      doc.body.style.webkitUserSelect='text';
+    }catch(e){}
+  });
+  await epubRendition.display();
+  resizeEpubViewer();
+  try{
+    await epubBookInst.ready;
+    if(epubBookInst.locations?.generate) await epubBookInst.locations.generate(1200);
+    rTotal=epubBookInst.locations?.length?.()||epubBookInst.locations?.total||0;
+  }catch(e){ rTotal=0; }
+  const m=getMeta(book.id);
+  if(m.progress>0){
+    try{
+      if(epubBookInst.locations?.cfiFromPercentage){
+        const cfi=epubBookInst.locations.cfiFromPercentage(m.progress/100);
+        if(cfi) await epubRendition.display(cfi);
+      }
+    }catch(e){}
+  }
+  applyTheme(rTheme);
+  applyReaderZoom();
+  epubRendition.on('relocated',loc=>saveEpubProgress(loc));
+  saveEpubProgress(epubRendition.currentLocation());
+}
+
+function saveEpubProgress(loc){
+  if(!loc||!readerBook) return;
+  let pct=Math.round((loc.start?.percentage||0)*100);
+  const disp=loc.start?.displayed;
+  if(disp?.total){
+    rPage=disp.page||1;
+    rTotal=disp.total;
+    pct=Math.round((rPage/rTotal)*100);
+  }else if(pct>0){
+    rPage=Math.max(1,Math.round((pct/100)*Math.max(rTotal,1)));
+  }
+  getMeta(readerBook.id).progress=Math.min(100,pct);
+  saveMeta();
+  updateCardProgress(readerBook.id,pct);
+  updateReaderBar();
+}
+
+function updateReaderBar(){
+  $('#rPage').textContent=rTotal?`${rPage} / ${rTotal}`:'–';
+  $('#rPrev').disabled=rPage<=1;
+  $('#rNext').disabled=rTotal>0&&rPage>=rTotal;
+}
+function updateCardProgress(id,pct){
+  const el=document.querySelector(`.card[data-id="${CSS.escape(id)}"] .progress i`);
+  if(el) el.style.width=pct+'%';
+}
+
+function setFont(px){
+  rFont=px;
+  applyReaderZoom();
+}
+function effectiveEpubFontSize(){ return Math.round(Math.max(13,Math.min(36,rFont*rZoom))); }
+function applyReaderZoom(){
+  updateZoomLabel();
+  if(readerBook?.type==='pdf'&&pdfDoc) renderPdfPage(rPage);
+  else if(epubRendition){
+    const px=effectiveEpubFontSize();
+    document.querySelectorAll('.epub-content').forEach(e=>e.style.fontSize=px+'px');
+    try{ epubRendition.themes.fontSize(px+'px'); }catch(e){}
+    resizeEpubViewer();
+  }
+}
+function updateZoomLabel(){
+  const el=$('#rZoomInd');
+  if(!el) return;
+  if(readerBook?.type==='pdf'&&pdfFitMode==='page'){ el.textContent='Page'; return; }
+  el.textContent=Math.round(rZoom*100)+'%';
+}
+function syncPdfFitButtons(){
+  const w=$('#rZoomFit'), p=$('#rZoomPage');
+  if(w) w.setAttribute('aria-pressed',pdfFitMode==='width'?'true':'false');
+  if(p) p.setAttribute('aria-pressed',pdfFitMode==='page'?'true':'false');
+}
+function changeZoom(delta){
+  if(readerBook?.type==='pdf') pdfFitMode='manual';
+  rZoom=Math.min(3,Math.max(0.5,Math.round((rZoom+delta)*10)/10));
+  applyReaderZoom();
+  syncPdfFitButtons();
+}
+function zoomFitWidth(){ pdfFitMode='width'; rZoom=1; applyReaderZoom(); syncPdfFitButtons(); }
+function zoomFitPage(){
+  if(readerBook?.type!=='pdf'||!pdfDoc){ toast('Fit page works for PDFs.'); return; }
+  pdfFitMode='page'; rZoom=1; applyReaderZoom(); syncPdfFitButtons();
+}
+function resizeEpubViewer(){
+  if(!epubRendition) return;
+  const host=$('#epubContent');
+  if(!host) return;
+  const w=host.clientWidth;
+  const h=host.clientHeight;
+  if(w>0&&h>0) try{ epubRendition.resize(w,h); }catch(e){}
+}
+function setReaderFocus(on){
+  const modal=$('#readerModal');
+  modal.classList.toggle('focus-mode',on);
+  const btn=$('#rFocusBtn');
+  if(btn) btn.setAttribute('aria-pressed',on?'true':'false');
+  if(modal.classList.contains('open')){
+    requestAnimationFrame(()=>{
+      if(pdfDoc&&readerBook?.type==='pdf') renderPdfPage(rPage);
+      else resizeEpubViewer();
+    });
+  }
+}
+function toggleReaderFocus(){ setReaderFocus(!$('#readerModal').classList.contains('focus-mode')); }
+function applyTheme(t){
+  rTheme=t;
+  const th=THEMES[t];
+  $('#epubStage').style.background=th.bg;
+  document.querySelectorAll('.epub-content').forEach(e=>e.style.color=th.fg);
+  if(epubRendition) try{ epubRendition.themes.override({body:{color:th.fg+' !important'}}); }catch(e){}
+  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active',d.dataset.theme===t));
+}
+
+function closeReader(){
+  const modal=$('#readerModal');
+  modal.classList.remove('open','focus-mode');
+  if(epubRendition){ try{ epubRendition.destroy(); }catch(e){} epubRendition=null; }
+  epubBookInst=null;
+  pdfDoc=null;
+  readerBook=null;
+  renderStats();
+}
+
+function readerNext(){
+  if(pdfDoc&&readerBook?.type==='pdf'){
+    if(rPage<rTotal) renderPdfPage(rPage+1);
+    return;
+  }
+  if(epubRendition) epubRendition.next();
+}
+function readerPrev(){
+  if(pdfDoc&&readerBook?.type==='pdf'){
+    if(rPage>1) renderPdfPage(rPage-1);
+    return;
+  }
+  if(epubRendition) epubRendition.prev();
+}
+
+/* ============================ detail modal ============================ */
+let dId=null;
+function openDetail(id){
+  const b=books.find(x=>x.id===id); if(!b) return; dId=id; const m=getMeta(b.id);
+  $('#detailCard').innerHTML=`
+    <div class="detail-cover">${b.coverUrl?`<img src="${b.coverUrl}" alt="">`:''}${!b.coverUrl?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Fraunces';font-size:20px;padding:16px;text-align:center;background:linear-gradient(150deg,#3a2c20,#241c15)">${esc(b.title)}</div>`:''}</div>
+    <div class="detail-body">
+      <h2 class="d-title">${esc(b.title)}</h2>
+      <div class="d-author">${esc(b.author||'Unknown author')}</div>
+      <div class="meta-grid">
+        <span><span class="k">Format</span> · ${b.type.toUpperCase()}</span>
+        <span><span class="k">Size</span> · ${fmtSize(b.size)}</span>
+        <span><span class="k">Added</span> · ${new Date(b.added).toLocaleDateString()}</span>
+        <span><span class="k">Last read</span> · ${m.lastRead?new Date(m.lastRead).toLocaleDateString():'—'}</span>
+      </div>
+      <div class="d-progress"><div class="lbl"><span>Progress</span><span>${m.progress||0}%</span></div><div class="pbar"><i style="width:${m.progress||0}%"></i></div></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <span style="font-size:13px;color:var(--ink-soft)">Rating</span>
+        <span id="dStars" style="cursor:pointer;font-size:24px;color:#c9bda6">${'★'.repeat(m.rating)}${'☆'.repeat(5-m.rating)}</span>
+      </div>
+      <div class="d-tags" id="dTags">${(m.tags||[]).map(t=>`<span class="tag-pill">${esc(t)} <button data-rmtag="${esc(t)}" style="border:0;background:none;cursor:pointer;color:var(--ink-soft);font-size:14px">×</button></span>`).join('')||'<span style="color:var(--ink-soft);font-size:13px">No tags yet</span>'}</div>
+      <input id="dTagInput" placeholder="Add a tag and press Enter…" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-family:inherit;font-size:13.5px;margin-bottom:14px"/>
+      <div class="d-notes"><textarea id="dNotes" placeholder="Your notes on this book…">${esc(m.notes||'')}</textarea></div>
+      <div class="d-actions">
+        <button class="btn primary" id="dReadFocus"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A1.5 1.5 0 0 1 4.5 4H9a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5.5A1.5 1.5 0 0 0 19.5 4H15a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5h7z"/></svg>Read</button>
+        <button class="btn ghost" id="dRead">Quick peek</button>
+        <button class="btn ghost" id="dReset">Reset progress</button>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="dClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>`;
+  $('#detailModal').classList.add('open'); document.body.style.overflow='hidden';
+
+  const stars=$('#dStars');
+  stars.onclick=e=>{ const r=Math.round((e.offsetX/stars.clientWidth)*5); m.rating=r===0?0:r; saveMeta(); openDetail(id); };
+  $('#dTagInput').onkeydown=e=>{ if(e.key==='Enter'&&e.target.value.trim()){ m.tags=m.tags||[]; if(!m.tags.includes(e.target.value.trim())) m.tags.push(e.target.value.trim()); saveMeta(); openDetail(id);} };
+  document.querySelectorAll('[data-rmtag]').forEach(btn=>btn.onclick=()=>{ m.tags=(m.tags||[]).filter(t=>t!==btn.dataset.rmtag); saveMeta(); openDetail(id); });
+  $('#dNotes').oninput=e=>{ m.notes=e.target.value; saveMeta(); };
+  $('#dReadFocus').onclick=()=>{ closeDetail(); openReader(id,{focus:true}); };
+  $('#dRead').onclick=()=>{ closeDetail(); openReader(id); };
+  $('#dReset').onclick=()=>{ m.progress=0; saveMeta(); render(); openDetail(id); toast('Progress reset'); };
+  $('#dClose').onclick=closeDetail;
+}
+function closeDetail(){ $('#detailModal').classList.remove('open'); document.body.style.overflow=''; dId=null; }
+
+/* ============================ export / import catalog ============================ */
+function exportCatalog(){
+  const data={version:2,exported:new Date().toISOString(),folder:directoryHandle?.name||null,books:books.map(b=>({id:b.id,relativePath:b.relativePath,name:b.name,title:b.title,author:b.author,type:b.type,size:b.size,added:b.added,meta:getMeta(b.id)}))};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='shelf-catalog.json'; a.click(); URL.revokeObjectURL(a.href); toast('Reading notes & tags exported.');
+}
+function importCatalog(file){
+  file.arrayBuffer().then(buf=>JSON.parse(new TextDecoder().decode(buf))).then(data=>{
+    let n=0;
+    (data.books||[]).forEach(b=>{ if(b.meta){ meta[b.id]=Object.assign(getMeta(b.id),b.meta); n++; } });
+    saveMeta(); render(); toast(n?`Merged metadata for ${n} book${n===1?'':'s'}.`:'Nothing to merge.');
+  }).catch(()=>toast('Could not read that file.'));
+}
+
+/* ============================ reveal observer ============================ */
+let io;
+function observeReveals(){ if(io) io.disconnect(); io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }),{threshold:.08}); document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el)); }
+
+/* ============================ events ============================ */
+$('#themeToggle').onclick=toggleUiTheme;
+$('#openBtn').onclick=selectDirectory;
+$('#refreshBtn').onclick=()=>directoryHandle?loadDirectory(true):selectDirectory();
+$('#exportBtn').onclick=exportCatalog;
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=e=>{ if(e.target.files[0]) importCatalog(e.target.files[0]); e.target.value=''; };
+$('#folderFallback').onchange=e=>{ if(e.target.files?.length) addSessionFiles(e.target.files); e.target.value=''; };
+
+const si=$('#searchInput');
+si.oninput=()=>{
+  $('#searchBox').classList.toggle('has',!!si.value);
+  query=si.value;
+  render();
+  clearTimeout(searchDebounce);
+  searchDebounce=setTimeout(refreshSearchTextIndex,350);
+};
+$('#searchClear').onclick=()=>{ si.value=''; query=''; books.forEach(b=>delete b._searchText); $('#searchBox').classList.remove('has'); render(); si.focus(); };
+
+$('#filterChips').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; filter=c.dataset.f; render(); };
+$('#sortSelect').onchange=e=>{ sortKey=e.target.value; render(); };
+
+$('#content').onclick=e=>{
+  const info=e.target.closest('[data-info]');
+  if(info){ e.stopPropagation(); openDetail(info.getAttribute('data-info')); return; }
+  const card=e.target.closest('.card');
+  if(card) openReader(card.dataset.id,{focus:e.shiftKey});
+};
+
+$('#rClose').onclick=closeReader;
+$('#rFocusBtn').onclick=toggleReaderFocus;
+$('#rZoomIn').onclick=()=>changeZoom(0.1);
+$('#rZoomOut').onclick=()=>changeZoom(-0.1);
+$('#rZoomFit').onclick=zoomFitWidth;
+$('#rZoomPage').onclick=zoomFitPage;
+$('#readerModal').addEventListener('click',e=>{
+  if(e.target===$('#readerModal')&&!$('#readerModal').classList.contains('focus-mode')) closeReader();
+});
+$('#pdfStage').addEventListener('wheel',e=>{
+  if(!$('#readerModal').classList.contains('open')||!pdfDoc) return;
+  if(!e.ctrlKey&&!e.metaKey) return;
+  e.preventDefault();
+  changeZoom(e.deltaY>0?-0.1:0.1);
+},{passive:false});
+window.addEventListener('resize',()=>{ if($('#readerModal').classList.contains('open')) resizeEpubViewer(); if(pdfDoc&&readerBook?.type==='pdf') renderPdfPage(rPage); });
+$('#detailModal').querySelector('.detail').addEventListener('click',e=>{ if(e.target.classList.contains('detail')) closeDetail(); });
+$('#rPrev').onclick=readerPrev;
+$('#rNext').onclick=readerNext;
+$('#fontCtl').onclick=e=>{ const b=e.target.closest('button'); if(b) setFont(Math.max(13,Math.min(28,rFont+parseInt(b.dataset.f,10)*2))); };
+document.querySelectorAll('.theme-dot').forEach(d=>d.onclick=()=>applyTheme(d.dataset.theme));
+
+document.addEventListener('keydown',e=>{
+  const typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA';
+  if(e.key==='/'&&!typing){ e.preventDefault(); si.focus(); return; }
+  if($('#readerModal').classList.contains('open')){
+    if(e.key==='Escape'){
+      if($('#readerModal').classList.contains('focus-mode')) setReaderFocus(false);
+      else closeReader();
+    }else if((e.key==='+'||e.key==='=')&&!typing){ e.preventDefault(); changeZoom(0.1); }
+    else if(e.key==='-'&&!typing){ e.preventDefault(); changeZoom(-0.1); }
+    else if((e.key==='f'||e.key==='F')&&!typing){ e.preventDefault(); toggleReaderFocus(); }
+    else if((e.key==='w'||e.key==='W')&&!typing&&pdfDoc){ e.preventDefault(); zoomFitWidth(); }
+    else if((e.key==='p'||e.key==='P')&&!typing&&pdfDoc){ e.preventDefault(); zoomFitPage(); }
+    else if(e.key==='ArrowRight') readerNext();
+    else if(e.key==='ArrowLeft') readerPrev();
+  }else if($('#detailModal').classList.contains('open')){
+    if(e.key==='Escape') closeDetail();
+  }
+});
+
+let dragDepth=0;
+window.addEventListener('dragenter',e=>{ e.preventDefault(); dragDepth++; $('#dropOverlay').classList.add('show'); });
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('dragleave',()=>{ if(--dragDepth<=0){ dragDepth=0; $('#dropOverlay').classList.remove('show'); } });
+window.addEventListener('drop',e=>{ e.preventDefault(); dragDepth=0; $('#dropOverlay').classList.remove('show'); if(e.dataTransfer.files?.length) addSessionFiles(e.dataTransfer.files); });
+
+/* ============================ init ============================ */
+loadUiTheme();
+loadMeta();
+render();
+observeReveals();
+tryRestoreDirectory();
+</script>
+</body>
+</html>
