@@ -120,7 +120,19 @@ A really simple web based eBook viewer and reader.
   
 ![ebookreader](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Ebook-Shelf/shelf-ebook-library.png)
 
-👉 [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Ebook-Shelf/ebook-shelf.html) 
+👉  [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Ebook-Shelf/ebook-shelf.html) 
+
+### Web Comic / Manga Reader (Single File)
+A really simple web based Comic / Manga viewer and reader.
+- browser based
+- privacy focused
+- view and read your Comics/Manga on your browser
+- No need to host or install anything
+- Supports ePub, PDF, CBZ ...etc
+  
+![comics](https://raw.githubusercontent.com/WhiskeyCoder/Random-Web-Experiments/refs/heads/main/Comics/2026-11-08%2015_22_54.png)
+
+👉  [ Use here ](https://whiskeycoder.github.io/Random-Web-Experiments/Comics/comics.html) 
 ---
 
 ## Philosophy
