@@ -1,22 +1,23 @@
 # Random Web Experiments
 
-A collection of random web apps, single-file projects, and experiments.
+A collection of random web apps, single-file projects, and experiments. 
 
 This repo exists for one reason:
 > Build things. Test ideas. Ship fast.
+> Most of the time, they are a Friday night crack a beer and code kind of ideas
 
 ---
 
 ## What This Is
 This is a dump of small projects I build when:
 - I want to test an idea quickly
-- I’m experimenting with AI-generated code or Challenges
+- I’m experimenting with AI-generated code support or Challenges
 - I’m bored and thinking *“can this be done in one file?”*
 - I want to prototype something before scaling it properly
 
 Most projects are:
 - Single HTML files
-- Minimal setup
+- Minimal or No setup (most just drag and drop into the browser)
 - Browser-ready
 - No dependencies
 
@@ -27,6 +28,7 @@ Most projects are:
 - Showcase practical coding ability
 - Experiment without overengineering
 - Validate ideas fast before committing to full projects
+- Boredom and cold beers 
 
 Think of this as:
 > A sandbox for ideas that might become something bigger later.
