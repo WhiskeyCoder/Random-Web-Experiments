@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#e8eaf4" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0c0b12" media="(prefers-color-scheme: dark)" />
+<title>Panels · Comic &amp; Manga Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{
+  --paper:#e8eaf4; --paper-2:#d8dce8; --card:#f4f5fa;
+  --ink:#12101a; --ink-soft:#5c5868; --line:#c4c8d8;
+  --accent:#6b4ce6; --accent-dk:#5538c9; --gold:#d4a017; --teal:#2a9d8f;
+  --shadow:0 1px 2px rgba(18,16,26,.06), 0 14px 34px -14px rgba(18,16,26,.28);
+  --topbar-bg:rgba(232,234,244,.85); --status-bg:rgba(244,245,250,.8);
+  --modal-scrim:rgba(12,10,18,.55); --hover-border:#a8aec8;
+  --cover-placeholder:#c8cce0; --input-bg:#fff;
+  --reader-shell:#0a0a0a; --reader-chrome:#141218; --reader-stage:#0a0a0a;
+  --toast-bg:#12101a; --toast-fg:#f4f5fa;
+  --search-glow:rgba(107,76,230,.18);
+  --dropzone-bg:rgba(244,245,250,.65); --dropzone-border:#a8aec8;
+  --page-gutter:clamp(18px,2.8vw,44px);
+  --scroll-track:calc(var(--page-gutter) + 28px);
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0c0b12; --paper-2:#16141f; --card:#1a1824;
+  --ink:#eae8f2; --ink-soft:#9490a4; --line:#2e2a3a;
+  --accent:#8b72ff; --accent-dk:#6b4ce6; --gold:#e0b832; --teal:#3db8a8;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -14px rgba(0,0,0,.55);
+  --topbar-bg:rgba(12,11,18,.9); --status-bg:rgba(22,20,31,.92);
+  --modal-scrim:rgba(0,0,0,.78); --hover-border:#4a4560;
+  --cover-placeholder:#252230; --input-bg:#12101a;
+  --reader-shell:#050508; --reader-chrome:#101018; --reader-stage:#050508;
+  --toast-bg:#eae8f2; --toast-fg:#12101a;
+  --search-glow:rgba(139,114,255,.25);
+  --dropzone-bg:rgba(26,24,36,.9); --dropzone-border:#4a4560;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);background:var(--paper);height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+body.has-library .hero{display:none}
+body.has-library .toolbar{padding-top:14px}
+.bg{position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(120% 90% at 90% -5%, #dcd8f0 0%, transparent 55%),
+  radial-gradient(80% 70% at -5% 100%, #d0d4e8 0%, transparent 60%), var(--paper);}
+[data-theme="dark"] .bg{background:
+  radial-gradient(120% 90% at 90% -5%, #1a1630 0%, transparent 55%),
+  radial-gradient(80% 70% at -5% 100%, #12101a 0%, transparent 60%), var(--paper);}
+.wrap{width:100%;max-width:none;margin:0;padding:0 var(--page-gutter)}
+.topbar{position:sticky;top:0;z-index:40;background:var(--topbar-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:18px;height:70px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);cursor:pointer}
+.mark{width:40px;height:40px;display:grid;place-items:center;background:linear-gradient(150deg,#3d2a6e,#6b4ce6);border-radius:9px;box-shadow:var(--shadow)}
+.mark svg{width:22px;height:22px}
+.brand b{font-family:'Bricolage Grotesque';font-weight:800;font-size:22px;letter-spacing:-.02em}
+.brand small{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}
+.search{flex:1;display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:0 13px;height:44px}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--search-glow)}
+.search svg{width:19px;height:19px;color:var(--ink-soft);flex:none}
+.search input{border:0;background:none;outline:none;font-family:inherit;font-size:15px;width:100%;color:var(--ink)}
+.search .clear{border:0;background:none;cursor:pointer;color:var(--ink-soft);font-size:20px;display:none}
+.search.has .clear{display:block}
+.top-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.status-bar{flex-shrink:0;border-bottom:1px solid var(--line);background:var(--status-bg);font-size:12.5px;color:var(--ink-soft);padding:7px var(--page-gutter);display:flex;align-items:center;gap:12px;min-height:36px}
+.status-bar.loading{color:var(--accent-dk)}
+.status-bar .folder-name{color:var(--ink);font-weight:600;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-prog{flex:1;max-width:280px;height:4px;background:var(--paper-2);border-radius:999px;overflow:hidden}
+.status-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--accent));transition:width .25s}
+main.wrap{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:0;width:100%}
+main.wrap>.hero,main.wrap>.toolbar,main.wrap>.continue-row{padding-left:var(--page-gutter);padding-right:var(--page-gutter)}
+.library-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 0 12px;scroll-behavior:smooth}
+#content{padding-left:var(--page-gutter);padding-right:var(--scroll-track)}
+.btn{font-family:inherit;font-weight:600;font-size:13.5px;border-radius:10px;padding:10px 15px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;transition:.18s}
+.btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px rgba(107,76,230,.65)}
+.btn.primary:hover{background:var(--accent-dk);transform:translateY(-1px)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{background:var(--card)}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink)}
+.icon-btn:hover{border-color:var(--hover-border)}
+.icon-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.icon-btn svg{width:19px;height:19px}
+.hero{padding:clamp(28px,5vw,48px) 0 8px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:24px;height:2px;background:var(--accent)}
+.hero h1{font-family:'Fraunces';font-weight:500;font-size:clamp(32px,5.5vw,56px);line-height:.98;margin:12px 0 0}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 16px;min-width:90px;box-shadow:var(--shadow)}
+.stat .n{font-family:'Bricolage Grotesque';font-weight:700;font-size:24px;line-height:1}
+.stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft);margin-top:4px}
+.continue-row{padding:16px 0 0;display:none}
+body.has-library .continue-row{display:block}
+.continue-row h2{font-family:'Fraunces';font-size:18px;margin:0 0 12px;font-weight:600}
+.continue-cards{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+.cont-card{flex:none;width:min(280px,70vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;font-family:inherit;color:inherit;transition:.2s}
+.cont-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.cont-card .ct{font-weight:600;font-size:14px;margin-bottom:4px}
+.cont-card .cs{font-size:12px;color:var(--ink-soft)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:20px 0 6px;border-bottom:1px solid var(--line)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink-soft)}
+.chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+[data-theme="dark"] .chip.active{color:var(--paper)}
+.spacer{flex:1}
+.select{font-family:inherit;font-weight:500;font-size:13.5px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.breadcrumb{font-size:13px;color:var(--ink-soft);padding:18px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.breadcrumb button{background:none;border:0;color:var(--accent);cursor:pointer;font:inherit;font-weight:600;padding:0}
+.breadcrumb span{color:var(--ink);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:24px 18px;padding:32px 0 48px}
+.card{position:relative;background:none;border:0;padding:0;text-align:left;cursor:pointer;font-family:inherit;color:inherit;display:flex;flex-direction:column;align-items:center}
+.cover-wrap{position:relative;width:100%;aspect-ratio:2/3;border-radius:8px;background:var(--cover-placeholder);box-shadow:var(--shadow);overflow:hidden;transition:.25s transform}
+.cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-fallback{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;color:#fff;background:linear-gradient(160deg,#3d2a6e,#6b4ce6)}
+.cf-title{font-family:'Fraunces';font-size:14px;line-height:1.15}
+.card:hover .cover-wrap{transform:translateY(-6px)}
+.badge{position:absolute;top:8px;right:8px;z-index:2;font-size:9px;font-weight:700;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:rgba(18,16,26,.8);color:#fff}
+.progress{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(0,0,0,.2);z-index:2}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--accent))}
+.card-meta{margin-top:10px;text-align:center;width:100%}
+.card-title{font-family:'Fraunces';font-size:14px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-sub{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+.issue-list{padding:8px 0 40px}
+.issue-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px;cursor:pointer;transition:.15s}
+.issue-row:hover{border-color:var(--accent)}
+.issue-row .num{font-family:'Bricolage Grotesque';font-weight:700;font-size:13px;color:var(--accent);min-width:36px}
+.issue-row .info{flex:1;min-width:0}
+.issue-row .iname{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.issue-row .imeta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.issue-row .iprog{width:80px;height:4px;background:var(--paper-2);border-radius:999px;overflow:hidden;flex:none}
+.issue-row .iprog i{display:block;height:100%;background:var(--accent)}
+.status-pill{font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--paper-2);color:var(--ink-soft);flex:none}
+.status-pill.completed{background:rgba(42,157,143,.2);color:var(--teal)}
+.status-pill.reading{background:rgba(107,76,230,.15);color:var(--accent)}
+.empty{text-align:center;padding:56px 20px 72px}
+.empty .big{font-family:'Fraunces';font-size:clamp(28px,4vw,42px);margin-bottom:12px}
+.empty p{color:var(--ink-soft);max-width:420px;margin:0 auto 22px;line-height:1.6}
+.dropzone{border:2px dashed var(--dropzone-border);border-radius:18px;padding:32px;background:var(--dropzone-bg);cursor:pointer}
+.modal{position:fixed;inset:0;z-index:60;display:none;background:var(--modal-scrim)}
+.modal.open{display:block}
+.modal.focus-mode{background:var(--reader-shell);backdrop-filter:none}
+.modal.focus-mode .reader{inset:0;border-radius:0;border:none;max-height:100vh}
+.reader{position:absolute;inset:clamp(6px,2vw,20px);background:var(--reader-shell);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #222}
+.reader-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--reader-chrome);border-bottom:1px solid #2a2a32;color:#eae8f2;flex-wrap:wrap}
+.reader-title{font-family:'Fraunces';font-size:16px;min-width:0;flex:1}
+.reader-sub{font-size:11px;color:#9490a4;margin-top:2px}
+.reader-body{flex:1;position:relative;overflow:hidden;background:var(--reader-stage);display:flex;align-items:center;justify-content:center;min-height:0}
+.reader-stage-inner{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:100%;padding:8px}
+.reader-stage-inner img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.reader-stage-inner.spread img{max-width:50%;max-height:100%}
+.reader-edge{position:absolute;top:0;bottom:0;width:20%;z-index:5;cursor:pointer}
+.reader-edge.prev{left:0}
+.reader-edge.next{right:0}
+.webtoon-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;align-items:center;background:#050508}
+.webtoon-scroll.active{display:flex}
+.webtoon-scroll img{width:100%;max-width:720px;display:block}
+.reader-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--reader-chrome);border-top:1px solid #2a2a32;color:#eae8f2;flex-wrap:wrap}
+.nav-btn{width:36px;height:36px;display:grid;place-items:center;border-radius:8px;border:1px solid #3a3a48;background:#1a1824;color:#eae8f2;cursor:pointer}
+.nav-btn:disabled{opacity:.35;cursor:default}
+.nav-btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.page-ind{font-size:12px;font-weight:600;min-width:72px;text-align:center;color:#9490a4}
+.zoom-ind{font-size:12px;min-width:40px;text-align:center;color:#9490a4}
+.thumb-grid{position:absolute;inset:0;z-index:20;background:rgba(5,5,8,.92);overflow-y:auto;padding:16px;display:none;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;align-content:start}
+.thumb-grid.open{display:grid}
+.thumb-grid button{border:2px solid transparent;border-radius:6px;padding:0;cursor:pointer;background:#222;aspect-ratio:2/3;overflow:hidden}
+.thumb-grid button.current{border-color:var(--accent)}
+.thumb-grid img{width:100%;height:100%;object-fit:cover}
+.detail{position:absolute;inset:0;display:flex;background:var(--modal-scrim);backdrop-filter:blur(4px)}
+.detail-card{margin:auto;width:min(680px,94vw);max-height:92vh;overflow:auto;background:var(--card);border-radius:18px;display:flex;box-shadow:var(--shadow)}
+.detail-cover{width:200px;flex:none;background:var(--cover-placeholder);position:relative}
+.detail-cover img{width:100%;height:100%;object-fit:cover}
+.detail-body{padding:22px 24px;flex:1;min-width:0}
+.d-title{font-family:'Fraunces';font-size:22px;margin:0 0 8px}
+.d-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(24px);background:var(--toast-bg);color:var(--toast-fg);padding:12px 20px;border-radius:12px;font-size:14px;z-index:90;opacity:0;transition:.3s}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast .next-link{color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:8px}
+.drop-overlay{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(107,76,230,.1)}
+.drop-overlay.show{display:grid}
+.reveal{opacity:0;transform:translateY(12px);transition:.5s}
+.reveal.in{opacity:1;transform:none}
+@media(max-width:640px){
+  .detail-card{flex-direction:column}
+  .detail-cover{width:100%;height:200px}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" id="brandHome" href="#">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#f4f5fa" stroke-width="1.6"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg></span>
+      <span><b>Panels</b><small>Comic &amp; Manga</small></span>
+    </a>
+    <div class="search" id="searchBox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="search" placeholder="Search series, issues, tags…" autocomplete="off"/>
+      <button type="button" class="clear" id="searchClear">×</button>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="icon-btn" id="themeToggle" aria-pressed="false" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg></button>
+      <button type="button" class="icon-btn" id="resetProgressBtn" title="Reset all reading progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></button>
+      <button type="button" class="icon-btn" id="exportBtn" title="Export tracking JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m-5-5 5 5 5-5M5 21h14"/></svg></button>
+      <button type="button" class="icon-btn" id="importBtn" title="Import tracking JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15V3m-5 5 5-5 5 5M5 21h14"/></svg></button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden/>
+      <button type="button" class="icon-btn" id="refreshBtn" title="Rescan library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg></button>
+      <button type="button" class="btn ghost" id="openSeriesBtn" title="One folder = one series">Open series</button>
+      <button type="button" class="btn primary" id="openBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" width="17" height="17"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open library</button>
+      <input type="file" id="folderFallback" webkitdirectory multiple hidden/>
+      <input type="file" id="seriesFolderFallback" webkitdirectory multiple hidden/>
+    </div>
+  </div>
+</header>
+<div class="status-bar" id="statusBar"><span id="statusText">Open library (many series) or Open series (one folder).</span><span class="folder-name" id="folderLabel" hidden></span><div class="status-prog" id="progressBar" hidden><i id="progressFill"></i></div></div>
+<main class="wrap">
+  <section class="hero reveal" id="hero">
+    <div>
+      <span class="eyebrow">Local library</span>
+      <h1>Every series.<br><em>Every issue.</em></h1>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+  <section class="continue-row" id="continueRow"><h2>Continue reading</h2><div class="continue-cards" id="continueCards"></div></section>
+  <section class="toolbar reveal" id="toolbar" style="display:none">
+    <div class="chips" id="filterChips"></div>
+    <div class="spacer"></div>
+    <select class="select" id="sortSelect">
+      <option value="title">Sort · Title A–Z</option>
+      <option value="activity">Sort · Recent activity</option>
+      <option value="progress">Sort · Progress</option>
+      <option value="issues">Sort · Issue count</option>
+    </select>
+  </section>
+  <div class="library-scroll" id="libraryScroll"><div id="content"></div></div>
+</main>
+
+<div class="modal" id="readerModal">
+  <div class="reader">
+    <div class="reader-top">
+      <div style="min-width:0;flex:1">
+        <div class="reader-title" id="rTitle"></div>
+        <div class="reader-sub" id="rSub"></div>
+      </div>
+      <button type="button" class="icon-btn" id="rSpreadBtn" title="Two-page spread" aria-pressed="false" style="background:#1a1824;border-color:#3a3a48;color:#eae8f2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/></svg></button>
+      <button type="button" class="icon-btn" id="rWebtoonBtn" title="Webtoon scroll" aria-pressed="false" style="background:#1a1824;border-color:#3a3a48;color:#eae8f2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6v12M16 6v12M4 4h16"/></svg></button>
+      <button type="button" class="icon-btn" id="rFocusBtn" title="Focus (F)" aria-pressed="false" style="background:#1a1824;border-color:#3a3a48;color:#eae8f2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+      <button type="button" class="icon-btn" id="rClose" title="Close (Esc)" style="background:#1a1824;border-color:#3a3a48;color:#eae8f2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="reader-body" id="readerBody">
+      <button type="button" class="reader-edge prev" id="rEdgePrev" aria-label="Previous page"></button>
+      <button type="button" class="reader-edge next" id="rEdgeNext" aria-label="Next page"></button>
+      <div class="reader-stage-inner" id="rStage"></div>
+      <div class="webtoon-scroll" id="rWebtoon"></div>
+      <div class="thumb-grid" id="rThumbGrid"></div>
+    </div>
+    <div class="reader-bar">
+      <button type="button" class="nav-btn" id="rPrev">←</button>
+      <span class="page-ind" id="rPage">–</span>
+      <button type="button" class="nav-btn" id="rNext">→</button>
+      <div class="spacer"></div>
+      <button type="button" class="nav-btn" id="rZoomOut">−</button>
+      <span class="zoom-ind" id="rZoomInd">100%</span>
+      <button type="button" class="nav-btn" id="rZoomIn">+</button>
+      <button type="button" class="nav-btn" id="rFitW" aria-pressed="true" title="Fit width (W)">↔</button>
+      <button type="button" class="nav-btn" id="rFitH" aria-pressed="false" title="Fit height (P)">↕</button>
+      <button type="button" class="nav-btn" id="rThumbBtn" title="Page grid (G)">▦</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="detailModal"><div class="detail"><div class="detail-card" id="detailCard"></div></div></div>
+<div class="toast" id="toast"></div>
+<div class="drop-overlay" id="dropOverlay"><div class="box" style="background:var(--card);padding:40px;border-radius:16px;font-family:Fraunces;font-size:22px">Drop library folder files here</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const LS_KEY='panels.catalog.v1';
+const OPEN_MODE_KEY='panels.openMode';
+const UI_THEME_KEY='panels.uiTheme';
+const DB_NAME='panels-library';
+const DB_VERSION=1;
+const supportsFSA='showDirectoryPicker' in window;
+const IMG_EXT=new Set(['.jpg','.jpeg','.png','.webp','.gif','.bmp']);
+const ARCHIVE_EXT={'.cbz':'cbz','.zip':'cbz','.cbr':'cbr','.cb7':'cb7','.7z':'cb7'};
+
+let dbPromise=null;
+let directoryHandle=null;
+/** @type {'library'|'series'} */
+let openMode='library';
+let seriesList=[];
+let filter='all', sortKey='title', query='';
+let view='library', activeSeriesId=null;
+let meta={series:{},issues:{}};
+let coverUrls=new Map();
+
+let readerIssue=null, readerSeries=null;
+let rPage=1, rTotal=0, rZoom=1, rFit='width', rSpread=false, rWebtoon=false, rFocus=false;
+let pageCache=new Map();
+let readerSession=null;
+let pdfDoc=null;
+let unrarModule=null, sevenZipModule=null;
+
+const $=s=>document.querySelector(s);
+function toast(msg,nextIssueId){
+  const t=$('#toast');
+  t.innerHTML=esc(msg)+(nextIssueId?` <span class="next-link" data-next="${esc(nextIssueId)}">Open next</span>`:'');
+  t.classList.add('show');
+  t.querySelector('[data-next]')?.addEventListener('click',()=>{ t.classList.remove('show'); openReader(nextIssueId,{focus:true,startAtBeginning:true}); });
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),nextIssueId?8000:2600);
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtSize(b){ if(!b) return '—'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+
+function loadMeta(){ try{meta=JSON.parse(localStorage.getItem(LS_KEY))||{series:{},issues:{}}; if(!meta.series) meta.series={}; if(!meta.issues) meta.issues={};}catch(e){meta={series:{},issues:{}};} }
+function saveMeta(){ localStorage.setItem(LS_KEY, JSON.stringify(meta)); }
+function getSeriesMeta(id){ return meta.series[id]||(meta.series[id]={}); }
+function getIssueMeta(id){ return meta.issues[id]||(meta.issues[id]={}); }
+
+function openDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise=new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+      if(!db.objectStoreNames.contains('covers')) db.createObjectStore('covers');
+      if(!db.objectStoreNames.contains('pagelist')) db.createObjectStore('pagelist');
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+  return dbPromise;
+}
+async function idbGet(store,key){ const db=await openDB(); return new Promise((res,rej)=>{ const r=db.transaction(store,'readonly').objectStore(store).get(key); r.onsuccess=()=>res(r.result??null); r.onerror=()=>rej(r.error); }); }
+async function idbSet(store,key,val){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(val,key); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
+
+function setStatus(msg,loading=false){ $('#statusText').textContent=msg; $('#statusBar').classList.toggle('loading',loading); }
+function setProgress(pct){ const bar=$('#progressBar'), fill=$('#progressFill'); if(pct<0){ bar.hidden=true; fill.style.width='0%'; return; } bar.hidden=false; fill.style.width=Math.min(100,pct)+'%'; }
+
+function applyUiTheme(theme){
+  const t=theme==='dark'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem(UI_THEME_KEY,t);
+  $('#themeToggle')?.setAttribute('aria-pressed',t==='dark'?'true':'false');
+}
+function loadUiTheme(){
+  let t=localStorage.getItem(UI_THEME_KEY);
+  if(t!=='dark'&&t!=='light') t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  applyUiTheme(t);
+}
+function toggleUiTheme(){ applyUiTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+
+function naturalCompare(a,b){
+  const ra=/(\d+)|(\D+)/g;
+  const aa=String(a).toLowerCase().match(ra)||[];
+  const bb=String(b).toLowerCase().match(ra)||[];
+  for(let i=0;i<Math.max(aa.length,bb.length);i++){
+    const x=aa[i]||'', y=bb[i]||'';
+    if(/^\d+$/.test(x)&&/^\d+$/.test(y)) { const d=parseInt(x,10)-parseInt(y,10); if(d) return d; }
+    else { const c=x.localeCompare(y); if(c) return c; }
+  }
+  return 0;
+}
+
+function getExt(name){ const i=name.lastIndexOf('.'); return i>=0?name.slice(i).toLowerCase():''; }
+function detectFileType(name){
+  const ext=getExt(name);
+  if(ext==='.pdf') return 'pdf';
+  if(ARCHIVE_EXT[ext]) return ARCHIVE_EXT[ext];
+  if(IMG_EXT.has(ext)) return 'image';
+  return null;
+}
+
+function issueId(seriesId, relativePath, size){ return seriesId+'/'+relativePath.replace(/\\/g,'/')+'|'+size; }
+
+function defaultSeriesKind(name){
+  const n=name.toLowerCase();
+  if(/manga|manhwa|manhua/.test(n)) return 'manga';
+  return 'comic';
+}
+function seriesReadingDirection(seriesId, seriesName){
+  const sm=getSeriesMeta(seriesId);
+  if(sm.readingDirection) return sm.readingDirection;
+  const k=sm.kind||defaultSeriesKind(seriesName);
+  return k==='manga'?'rtl':'ltr';
+}
+
+function parseIssueTitle(name){
+  let base=name.replace(/\.[^.]+$/,'');
+  return base.replace(/[_]+/g,' ').trim();
+}
+
+async function collectIssuesInDir(dirHandle, seriesId, basePath){
+  const issues=[];
+  const entries=[];
+  for await (const e of dirHandle.values()) entries.push(e);
+
+  for(const entry of entries){
+    if(entry.kind==='file'){
+      const type=detectFileType(entry.name);
+      if(!type||type==='image') continue;
+      const rel=basePath?basePath+'/'+entry.name:entry.name;
+      const file=await entry.getFile();
+      issues.push({
+        id:issueId(seriesId,rel,file.size),
+        seriesId, relativePath:rel, name:entry.name, title:parseIssueTitle(entry.name),
+        type, size:file.size, lastModified:file.lastModified,
+        fileHandle:entry, albumHandle:null,
+      });
+    }
+  }
+
+  for(const entry of entries){
+    if(entry.kind!=='directory') continue;
+    const rel=basePath?basePath+'/'+entry.name:entry.name;
+    const subEntries=[];
+    let hasSubdir=false;
+    for await (const se of entry.values()){
+      subEntries.push(se);
+      if(se.kind==='directory') hasSubdir=true;
+    }
+    if(hasSubdir){
+      const nested=await collectIssuesInDir(entry, seriesId, rel);
+      issues.push(...nested);
+      continue;
+    }
+    const images=subEntries.filter(se=>se.kind==='file'&&detectFileType(se.name)==='image');
+    const archives=subEntries.filter(se=>se.kind==='file'&&detectFileType(se.name)&&detectFileType(se.name)!=='image');
+    if(archives.length) continue;
+    if(images.length>=1){
+      let totalSize=0;
+      for(const im of images){ totalSize+=(await im.getFile()).size; }
+      issues.push({
+        id:issueId(seriesId,rel+'/|album|'+images.length, totalSize),
+        seriesId, relativePath:rel, name:entry.name, title:parseIssueTitle(entry.name),
+        type:'album', size:totalSize, lastModified:Date.now(),
+        fileHandle:null, albumHandle:entry, imageCount:images.length,
+      });
+    }
+  }
+  return issues;
+}
+
+function sortIssues(issues, seriesId){
+  const sm=getSeriesMeta(seriesId);
+  if(sm.issueOrder?.length){
+    const order=new Map(sm.issueOrder.map((id,i)=>[id,i]));
+    return issues.slice().sort((a,b)=>(order.get(a.id)??9999)-(order.get(b.id)??9999));
+  }
+  return issues.slice().sort((a,b)=>naturalCompare(a.name,b.name));
+}
+
+function loadOpenMode(){
+  const m=localStorage.getItem(OPEN_MODE_KEY);
+  openMode=m==='series'?'series':'library';
+}
+function saveOpenMode(){ localStorage.setItem(OPEN_MODE_KEY, openMode); }
+
+function emptyStatusHint(){
+  return 'Open library (many series) or Open series (one folder).';
+}
+
+async function scanLibrary(showToast){
+  if(!directoryHandle) return;
+  seriesList=[];
+  setStatus(openMode==='series'?'Scanning series…':'Scanning library…',true);
+  setProgress(0);
+  revokeCoverUrls();
+  try{
+    if(openMode==='series'){
+      const seriesId=directoryHandle.name;
+      let issues=await collectIssuesInDir(directoryHandle, seriesId, '');
+      issues=sortIssues(issues, seriesId);
+      if(!getSeriesMeta(seriesId).kind) getSeriesMeta(seriesId).kind=defaultSeriesKind(seriesId);
+      seriesList=[{ id:seriesId, name:seriesId, dirHandle:directoryHandle, issues }];
+      view='series';
+      activeSeriesId=seriesId;
+      document.body.classList.toggle('has-library',issues.length>0);
+      setProgress(-1);
+      if(!issues.length){
+        setStatus('No CBZ/CBR/CB7/PDF or image albums in this folder.');
+        if(showToast) toast('No issues found in folder');
+      }else{
+        setStatus(`${issues.length} issues · ${directoryHandle.name}`);
+        if(showToast) toast(`Opened series · ${issues.length} issues`);
+      }
+    }else{
+      view='library';
+      activeSeriesId=null;
+      const topEntries=[];
+      for await (const e of directoryHandle.values()) topEntries.push(e);
+      const dirs=topEntries.filter(e=>e.kind==='directory');
+      let i=0;
+      for(const dir of dirs){
+        const seriesId=dir.name;
+        let issues=await collectIssuesInDir(dir, seriesId, '');
+        issues=sortIssues(issues, seriesId);
+        if(!getSeriesMeta(seriesId).kind) getSeriesMeta(seriesId).kind=defaultSeriesKind(seriesId);
+        seriesList.push({ id:seriesId, name:seriesId, dirHandle:dir, issues });
+        i++;
+        setProgress(dirs.length?((i/dirs.length)*100):100);
+      }
+      seriesList.sort((a,b)=>naturalCompare(a.name,b.name));
+      document.body.classList.toggle('has-library',seriesList.length>0);
+      setProgress(-1);
+      setStatus(seriesList.length?`${seriesList.length} series · ${directoryHandle.name}`:'No series folders found — try Open series for a single title folder.');
+      if(showToast) toast(`Loaded ${seriesList.length} series`);
+    }
+    render();
+    hydrateCoversInBackground();
+  }catch(e){
+    console.error(e);
+    setProgress(-1);
+    setStatus('Could not scan folder.');
+    toast('Could not scan folder.');
+  }
+}
+
+function revokeCoverUrls(){
+  coverUrls.forEach(u=>URL.revokeObjectURL(u));
+  coverUrls.clear();
+  seriesList.forEach(s=>{ s.coverUrl=null; s.issues.forEach(i=>i.coverUrl=null); });
+}
+
+function coverKey(id, lm){ return id+'|'+(lm||0); }
+
+async function pickFolder(mode){
+  openMode=mode;
+  saveOpenMode();
+  if(supportsFSA){
+    try{
+      directoryHandle=await window.showDirectoryPicker({mode:'read'});
+      await idbSet('handles','main',directoryHandle);
+      $('#folderLabel').textContent=directoryHandle.name;
+      $('#folderLabel').hidden=false;
+      await scanLibrary(true);
+    }catch(err){ if(err.name!=='AbortError') toast(err.message); }
+    return;
+  }
+  if(mode==='series') $('#seriesFolderFallback').click();
+  else $('#folderFallback').click();
+}
+
+async function selectDirectory(){ return pickFolder('library'); }
+async function selectSeriesFolder(){ return pickFolder('series'); }
+
+async function tryRestoreDirectory(){
+  if(!supportsFSA){ setStatus('Use Chrome/Edge for persistent folder access, or Open library.'); return; }
+  setStatus('Restoring library…',true);
+  try{
+    const handle=await idbGet('handles','main');
+    if(!handle){ setStatus(emptyStatusHint()); return; }
+    loadOpenMode();
+    let perm=await handle.queryPermission({mode:'read'});
+    if(perm!=='granted') perm=await handle.requestPermission({mode:'read'});
+    if(perm!=='granted'){ setStatus('Click Open library to grant access.'); return; }
+    directoryHandle=handle;
+    $('#folderLabel').textContent=handle.name;
+    $('#folderLabel').hidden=false;
+    await scanLibrary(false);
+  }catch(e){ setStatus(emptyStatusHint()); }
+}
+
+function seriesDisplayName(s){ const m=getSeriesMeta(s.id); return m.displayName||s.name; }
+function seriesStats(s){
+  const issues=s.issues;
+  const completed=issues.filter(i=>(getIssueMeta(i.id).status||'')==='completed').length;
+  const reading=issues.filter(i=>(getIssueMeta(i.id).status||'')==='reading').length;
+  const pct=issues.length?Math.round((completed/issues.length)*100):0;
+  let lastActivity=0;
+  issues.forEach(i=>{ const lm=getIssueMeta(i.id).lastReadAt||0; if(lm>lastActivity) lastActivity=lm; });
+  return { completed, reading, pct, lastActivity, total:issues.length };
+}
+
+function continueQueue(){
+  const items=[];
+  seriesList.forEach(s=>{
+    s.issues.forEach(i=>{
+      const m=getIssueMeta(i.id);
+      if(m.status==='reading'||(m.lastReadAt&&m.status!=='completed')){
+        items.push({ series:s, issue:i, lastReadAt:m.lastReadAt||0, page:m.page||1 });
+      }
+    });
+  });
+  items.sort((a,b)=>b.lastReadAt-a.lastReadAt);
+  return items.slice(0,6);
+}
+
+function visibleSeries(){
+  let list=seriesList.slice();
+  const q=query.trim().toLowerCase();
+  if(q){
+    list=list.filter(s=>{
+      if(seriesDisplayName(s).toLowerCase().includes(q)) return true;
+      if(s.issues.some(i=>i.title.toLowerCase().includes(q)||i.name.toLowerCase().includes(q))) return true;
+      const tags=(getSeriesMeta(s.id).tags||[]).concat(...s.issues.flatMap(i=>getIssueMeta(i.id).tags||[]));
+      if(tags.some(t=>t.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+  if(filter==='reading') list=list.filter(s=>seriesStats(s).reading>0);
+  else if(filter==='completed') list=list.filter(s=>{ const st=seriesStats(s); return st.total>0&&st.completed===st.total; });
+  else if(filter==='unread') list=list.filter(s=>s.issues.some(i=>!getIssueMeta(i.id).status||getIssueMeta(i.id).status==='unread'));
+  else if(filter==='manga') list=list.filter(s=>(getSeriesMeta(s.id).kind||defaultSeriesKind(s.name))==='manga');
+  else if(filter==='comics') list=list.filter(s=>(getSeriesMeta(s.id).kind||defaultSeriesKind(s.name))==='comic');
+
+  list.sort((a,b)=>{
+    if(sortKey==='title') return naturalCompare(seriesDisplayName(a),seriesDisplayName(b));
+    if(sortKey==='activity') return seriesStats(b).lastActivity-seriesStats(a).lastActivity;
+    if(sortKey==='progress') return seriesStats(b).pct-seriesStats(a).pct;
+    if(sortKey==='issues') return b.issues.length-a.issues.length;
+    return 0;
+  });
+  return list;
+}
+
+function renderStats(){
+  let series=seriesList.length, issues=0, done=0, reading=0;
+  seriesList.forEach(s=>{ issues+=s.issues.length; s.issues.forEach(i=>{ const st=getIssueMeta(i.id).status; if(st==='completed') done++; if(st==='reading') reading++; }); });
+  $('#stats').innerHTML=`
+    <div class="stat"><div class="n">${series}</div><div class="l">Series</div></div>
+    <div class="stat"><div class="n">${issues}</div><div class="l">Issues</div></div>
+    <div class="stat"><div class="n">${done}</div><div class="l">Completed</div></div>
+    <div class="stat"><div class="n">${reading}</div><div class="l">Reading</div></div>`;
+}
+
+function renderContinue(){
+  const q=continueQueue();
+  const row=$('#continueCards');
+  if(!q.length){ $('#continueRow').style.display='none'; return; }
+  $('#continueRow').style.display='block';
+  row.innerHTML=q.map(({series,issue,page})=>`
+    <button type="button" class="cont-card" data-issue="${esc(issue.id)}">
+      <div class="ct">${esc(seriesDisplayName(series))}</div>
+      <div class="cs">${esc(issue.title)} · p.${page}</div>
+    </button>`).join('');
+  row.querySelectorAll('[data-issue]').forEach(btn=>btn.onclick=()=>openReader(btn.dataset.issue,{focus:true}));
+}
+
+function renderChips(){
+  const chips=[['all','All'],['reading','Reading'],['completed','Completed'],['unread','Unread'],['manga','Manga'],['comics','Comics']];
+  $('#filterChips').innerHTML=chips.map(([k,l])=>`<button type="button" class="chip ${filter===k?'active':''}" data-f="${k}">${l}</button>`).join('');
+}
+
+function renderEmpty(){
+  $('#content').innerHTML=`<div class="empty"><div class="big">No folder open</div><p><strong>Open library</strong> — parent folder; each subfolder is a series.<br><strong>Open series</strong> — one folder of chapters (CBZ, PDF, albums, etc.).</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+      <button type="button" class="btn ghost" id="dzSeries">Open series folder</button>
+      <button type="button" class="btn primary" id="dzLib">Open library folder</button>
+    </div></div>`;
+  $('#dzLib')?.addEventListener('click',selectDirectory);
+  $('#dzSeries')?.addEventListener('click',selectSeriesFolder);
+}
+
+function renderSeriesGrid(list){
+  let html='<div class="grid">';
+  list.forEach((s,i)=>{
+    const st=seriesStats(s);
+    const hasCover=!!s.coverUrl;
+    const fb=`<div class="cover-fallback"><div class="cf-title">${esc(seriesDisplayName(s))}</div></div>`;
+    html+=`<button type="button" class="card reveal" data-series="${esc(s.id)}" style="transition-delay:${Math.min(i*24,360)}ms">
+      <span class="cover-wrap">${fb}${hasCover?`<img src="${s.coverUrl}" alt="" loading="lazy">`:''}
+        <span class="badge">${st.completed}/${st.total}</span>
+        <span class="progress"><i style="width:${st.pct}%"></i></span>
+      </span>
+      <span class="card-meta"><span class="card-title">${esc(seriesDisplayName(s))}</span><span class="card-sub">${st.total} issues · ${st.pct}% read</span></span>
+    </button>`;
+  });
+  html+='</div>';
+  return html;
+}
+
+function renderSeriesDetail(s){
+  const sm=getSeriesMeta(s.id);
+  const dir=seriesReadingDirection(s.id,s.name);
+  let issues=s.issues.slice();
+  const q=query.trim().toLowerCase();
+  if(q) issues=issues.filter(i=>i.title.toLowerCase().includes(q)||i.name.toLowerCase().includes(q));
+  const bc=openMode==='library'
+    ? `<div class="breadcrumb"><button type="button" id="bcHome">Library</button> / <span>${esc(seriesDisplayName(s))}</span></div>`
+    : `<div class="breadcrumb"><span>${esc(seriesDisplayName(s))}</span> <span style="color:var(--ink-soft);font-weight:400">· single series</span></div>`;
+  let html=bc;
+  html+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+    <select class="select" id="seriesKind"><option value="comic">Comic</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option><option value="other">Other</option></select>
+    <select class="select" id="seriesDir"><option value="ltr">LTR</option><option value="rtl">RTL</option></select>
+    <button type="button" class="btn ghost" id="seriesReorderHint" title="Use ↑↓ on each row to set custom issue order">Custom order: ↑↓ rows</button>
+  </div>`;
+  html+='<div class="issue-list">';
+  issues.forEach((iss,idx)=>{
+    const m=getIssueMeta(iss.id);
+    const prog=m.pageCount?Math.round(((m.page||1)/m.pageCount)*100):(m.progress||0);
+    const st=m.status||'unread';
+    html+=`<div class="issue-row" data-issue="${esc(iss.id)}" data-idx="${idx}">
+      <span class="num">${String(idx+1).padStart(2,'0')}</span>
+      <div class="info"><div class="iname">${esc(iss.title)}</div><div class="imeta">${iss.type.toUpperCase()} · ${fmtSize(iss.size)}</div></div>
+      <div class="iprog"><i style="width:${prog}%"></i></div>
+      <span class="status-pill ${st}">${st}</span>
+      <button type="button" class="icon-btn" data-up="${esc(iss.id)}" title="Move up" style="width:32px;height:32px">↑</button>
+      <button type="button" class="icon-btn" data-down="${esc(iss.id)}" title="Move down" style="width:32px;height:32px">↓</button>
+      <button type="button" class="icon-btn" data-info="${esc(iss.id)}" title="Details" style="width:34px;height:34px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></button>
+    </div>`;
+  });
+  html+='</div>';
+  return { html, sm, dir };
+}
+
+function render(){
+  const has=seriesList.length>0;
+  document.body.classList.toggle('has-library',has);
+  $('#toolbar').style.display=has?'flex':'none';
+  renderStats();
+  renderContinue();
+  if(!has){ view='library'; activeSeriesId=null; renderEmpty(); return; }
+  renderChips();
+  const grid=$('#content');
+  if(view==='series'&&activeSeriesId){
+    const s=seriesList.find(x=>x.id===activeSeriesId);
+    if(!s){ view='library'; activeSeriesId=null; render(); return; }
+    const {html,sm}=renderSeriesDetail(s);
+    grid.innerHTML=html;
+    $('#bcHome')?.addEventListener('click',()=>{ view='library'; activeSeriesId=null; render(); });
+    const kindEl=$('#seriesKind'), dirEl=$('#seriesDir');
+    kindEl.value=sm.kind||defaultSeriesKind(s.name);
+    dirEl.value=sm.readingDirection||seriesReadingDirection(s.id,s.name);
+    kindEl.onchange=()=>{ sm.kind=kindEl.value; saveMeta(); render(); };
+    dirEl.onchange=()=>{ sm.readingDirection=dirEl.value; saveMeta(); };
+    grid.querySelectorAll('.issue-row').forEach(row=>{
+      row.onclick=e=>{
+        if(e.target.closest('[data-info]')){ e.stopPropagation(); openIssueDetail(row.dataset.issue); return; }
+        if(e.target.closest('[data-up]')){ e.stopPropagation(); moveIssueOrder(s.id,e.target.closest('[data-up]').dataset.up,-1); return; }
+        if(e.target.closest('[data-down]')){ e.stopPropagation(); moveIssueOrder(s.id,e.target.closest('[data-down]').dataset.down,1); return; }
+        openReader(row.dataset.issue,{focus:e.shiftKey});
+      };
+    });
+    observeReveals();
+    return;
+  }
+  const list=visibleSeries();
+  if(!list.length){ grid.innerHTML='<div class="empty"><div class="big">No matches</div></div>'; return; }
+  grid.innerHTML=renderSeriesGrid(list);
+  grid.querySelectorAll('[data-series]').forEach(card=>card.onclick=()=>{ view='series'; activeSeriesId=card.dataset.series; render(); });
+  observeReveals();
+}
+
+/* ============ decoders ============ */
+function isImagePath(path){
+  return IMG_EXT.has(getExt(path));
+}
+
+async function ensureUnrar(){
+  if(unrarModule) return unrarModule;
+  setStatus('Loading RAR decoder…',true);
+  const mod=await import('https://cdn.jsdelivr.net/npm/node-unrar-js@2.0.2/+esm');
+  const wasmResp=await fetch('https://cdn.jsdelivr.net/npm/node-unrar-js@2.0.2/dist/js/unrar.wasm');
+  const wasmBinary=await wasmResp.arrayBuffer();
+  unrarModule={ createExtractorFromData:mod.createExtractorFromData, wasmBinary };
+  setStatus(seriesList.length?`${seriesList.length} series · ${directoryHandle?.name||''}`:'Ready');
+  return unrarModule;
+}
+
+async function ensure7z(){
+  if(sevenZipModule) return sevenZipModule;
+  setStatus('Loading 7z decoder…',true);
+  const mod=await import('https://cdn.jsdelivr.net/npm/7z-wasm@1.2.0/+esm');
+  sevenZipModule=mod;
+  setStatus(seriesList.length?`${seriesList.length} series · ${directoryHandle?.name||''}`:'Ready');
+  return sevenZipModule;
+}
+
+async function getIssueFile(issue){
+  if(issue.sessionFile) return issue.sessionFile;
+  if(issue.fileHandle) return issue.fileHandle.getFile();
+  throw new Error('Re-open library folder for file access.');
+}
+
+async function listPagesFromZip(arrayBuffer){
+  const zip=await JSZip.loadAsync(arrayBuffer);
+  let comicInfo=null;
+  const ci=zip.file(/ComicInfo\.xml$/i)?.[0];
+  if(ci){
+    try{
+      const xml=await ci.async('string');
+      comicInfo={
+        title:xml.match(/<Title>([^<]*)</i)?.[1],
+        number:xml.match(/<Number>([^<]*)</i)?.[1],
+        series:xml.match(/<Series>([^<]*)</i)?.[1],
+      };
+    }catch(e){}
+  }
+  const pages=[];
+  zip.forEach((rel,file)=>{
+    if(file.dir) return;
+    if(!isImagePath(rel)) return;
+    if(/\/__MACOSX\//i.test(rel)||/^\.|^__MACOSX/i.test(rel)) return;
+    pages.push(rel);
+  });
+  pages.sort(naturalCompare);
+  return { pages, zip, comicInfo, kind:'cbz' };
+}
+
+async function listPagesFromCbr(arrayBuffer){
+  const {createExtractorFromData,wasmBinary}=await ensureUnrar();
+  const extractor=await createExtractorFromData({ data:new Uint8Array(arrayBuffer), wasmBinary });
+  const headers=[...extractor.getFileList().fileHeaders].filter(h=>!h.flags.directory&&isImagePath(h.name.replace(/\\/g,'/')));
+  const pageNames=headers.map(h=>h.name.replace(/\\/g,'/')).sort(naturalCompare);
+  return { pageNames, kind:'cbr', cbrBuffer:arrayBuffer };
+}
+
+async function listPagesFrom7z(arrayBuffer){
+  const mod=await ensure7z();
+  const SevenZip=mod.default||mod;
+  const sevenZip=await SevenZip();
+  const arcName='panels_'+Math.random().toString(36).slice(2)+'.7z';
+  const outDir='out_'+Math.random().toString(36).slice(2);
+  sevenZip.FS.writeFile(arcName,new Uint8Array(arrayBuffer));
+  sevenZip.FS.mkdir(outDir);
+  try{ sevenZip.callMain(['x',arcName,'-y','-o'+outDir]); }catch(e){ console.warn('7z extract',e); }
+  const pages=[];
+  function walk(dir,prefix){
+    let names;
+    try{ names=sevenZip.FS.readdir(dir); }catch(e){ return; }
+    for(const n of names){
+      if(n==='.'||n==='..') continue;
+      const path=dir+'/'+n;
+      let st;
+      try{ st=sevenZip.FS.stat(path); }catch(e){ continue; }
+      if(sevenZip.FS.isDir(st.mode)) walk(path,prefix+n+'/');
+      else if(isImagePath(n)){
+        pages.push({ name:prefix+n, path });
+      }
+    }
+  }
+  walk(outDir,'');
+  pages.sort((a,b)=>naturalCompare(a.name,b.name));
+  const pageData=pages.map(p=>{ try{ return { name:p.name, data:sevenZip.FS.readFile(p.path) }; }catch(e){ return null; } }).filter(Boolean);
+  try{ sevenZip.FS.unlink(arcName); }catch(e){}
+  return { pages:pageData, kind:'cb7' };
+}
+
+async function listPagesFromAlbum(albumHandle){
+  const pages=[];
+  for await (const e of albumHandle.values()){
+    if(e.kind!=='file') continue;
+    if(detectFileType(e.name)!=='image') continue;
+    pages.push({ name:e.name, handle:e });
+  }
+  pages.sort((a,b)=>naturalCompare(a.name,b.name));
+  return { pages, kind:'album' };
+}
+
+async function listPagesFromPdf(arrayBuffer){
+  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  return { pages:Array.from({length:pdf.numPages},(_,i)=>i+1), pdf, kind:'pdf' };
+}
+
+async function loadPageList(issue){
+  const cached=await idbGet('pagelist',issue.id);
+  async function attachBuffers(){
+    if(issue.type==='album') return;
+    const file=await getIssueFile(issue);
+    const buf=await file.arrayBuffer();
+    if(issue.type==='cbz') readerSession={ ...readerSession, zipBuffer:buf };
+    else if(issue.type==='cbr') readerSession={ ...readerSession, cbrBuffer:buf, cbrExtractor:null };
+    else if(issue.type==='cb7'){
+      const {pages}=await listPagesFrom7z(buf);
+      readerSession={ ...readerSession, cb7Pages:pages };
+    }else if(issue.type==='pdf'){
+      readerSession={ ...readerSession, pdfBuffer:buf };
+      readerSession.pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    }
+  }
+  if(cached?.pageCount){
+    await attachBuffers();
+    return cached;
+  }
+
+  let result;
+  if(issue.type==='album'){
+    const album=issue.albumHandle||issue.sessionAlbum;
+    if(!album) throw new Error('Album folder missing');
+    const {pages}=await listPagesFromAlbum(album);
+    result={ pageCount:pages.length, pageNames:pages.map(p=>p.name), kind:'album' };
+  }else{
+    const file=await getIssueFile(issue);
+    const buf=await file.arrayBuffer();
+    if(issue.type==='pdf'){
+      const {pages,pdf}=await listPagesFromPdf(buf);
+      result={ pageCount:pages.length, kind:'pdf' };
+      readerSession={ ...readerSession, pdf, pdfBuffer:buf };
+    }else if(issue.type==='cbz'){
+      const {pages,comicInfo}=await listPagesFromZip(buf);
+    if(comicInfo?.title) issue.title=comicInfo.title||issue.title;
+      if(comicInfo?.number) issue.number=comicInfo.number;
+      result={ pageCount:pages.length, pageNames:pages, kind:'cbz', comicInfo };
+      readerSession={ ...readerSession, zipBuffer:buf };
+    }else if(issue.type==='cbr'){
+      const {pageNames}=await listPagesFromCbr(buf);
+      result={ pageCount:pageNames.length, pageNames, kind:'cbr' };
+      readerSession={ ...readerSession, cbrBuffer:buf, cbrExtractor:null };
+    }else if(issue.type==='cb7'){
+      const {pages}=await listPagesFrom7z(buf);
+      result={ pageCount:pages.length, pageNames:pages.map(p=>p.name), kind:'cb7' };
+      readerSession={ ...readerSession, cb7Pages:pages };
+    }
+  }
+  await idbSet('pagelist',issue.id,result);
+  getIssueMeta(issue.id).pageCount=result.pageCount;
+  saveMeta();
+  return result;
+}
+
+async function getPageBlob(issue, pageIndex){
+  const key=issue.id+'|'+pageIndex;
+  if(pageCache.has(key)) return pageCache.get(key);
+
+  const list=readerSession?.pageList||await loadPageList(issue);
+  readerSession={ ...readerSession, pageList:list };
+
+  let blob;
+  if(list.kind==='pdf'||issue.type==='pdf'){
+    const pdf=readerSession.pdf||await pdfjsLib.getDocument({data:readerSession.pdfBuffer}).promise;
+    readerSession.pdf=pdf;
+    const p=await pdf.getPage(pageIndex);
+    const vp=p.getViewport({scale:1.5});
+    const c=document.createElement('canvas');
+    c.width=vp.width; c.height=vp.height;
+    await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    blob=await new Promise(res=>c.toBlob(res,'image/jpeg',0.92));
+  }else if(list.kind==='cbz'||issue.type==='cbz'){
+    const zip=await JSZip.loadAsync(readerSession.zipBuffer);
+    const path=list.pageNames[pageIndex-1];
+    blob=await zip.file(path).async('blob');
+  }else if(list.kind==='cbr'||issue.type==='cbr'){
+    if(!readerSession.cbrExtractor){
+      const {createExtractorFromData,wasmBinary}=await ensureUnrar();
+      readerSession.cbrExtractor=await createExtractorFromData({ data:new Uint8Array(readerSession.cbrBuffer), wasmBinary });
+    }
+    const name=list.pageNames[pageIndex-1];
+    const extracted=[...readerSession.cbrExtractor.extract({ files:[name] }).files];
+    const file=extracted[0];
+    if(!file?.extraction) throw new Error('Could not extract page from CBR');
+    blob=new Blob([file.extraction]);
+  }else if(list.kind==='cb7'||issue.type==='cb7'){
+    const entry=readerSession.cb7Pages?.[pageIndex-1];
+    if(!entry?.data) throw new Error('7z page missing — reopen issue');
+    blob=new Blob([entry.data]);
+  }else if(list.kind==='album'||issue.type==='album'){
+    const album=issue.albumHandle||issue.sessionAlbum;
+    const names=list.pageNames;
+    let handle=null;
+    for await (const e of album.values()){
+      if(e.kind==='file'&&e.name===names[pageIndex-1]){ handle=e; break; }
+    }
+    if(!handle) throw new Error('Image not found');
+    blob=await handle.getFile();
+  }
+
+  const url=URL.createObjectURL(blob);
+  pageCache.set(key,url);
+  return url;
+}
+
+function clearPageCache(){
+  pageCache.forEach(u=>URL.revokeObjectURL(u));
+  pageCache.clear();
+}
+
+async function extractCoverBlob(issue){
+  const saved=readerSession;
+  readerSession={ issueId:issue.id };
+  clearPageCache();
+  try{
+    const list=await loadPageList(issue);
+    readerSession.pageList=list;
+    const url=await getPageBlob(issue,1);
+    const resp=await fetch(url);
+    return await resp.blob();
+  }catch(e){
+    console.warn('cover',issue.name,e);
+    return null;
+  }finally{
+    clearPageCache();
+    readerSession=saved;
+  }
+}
+
+async function hydrateCoversInBackground(){
+  for(const s of seriesList){
+    const sm=getSeriesMeta(s.id);
+    let coverIssue=s.issues.find(i=>i.id===sm.coverIssueId)||s.issues[0];
+    if(!coverIssue) continue;
+    const ck=coverKey(coverIssue.id,coverIssue.lastModified);
+    let blob=await idbGet('covers',ck);
+    if(!blob){
+      blob=await extractCoverBlob(coverIssue);
+      if(blob) await idbSet('covers',ck,blob);
+    }
+    if(blob){
+      const url=URL.createObjectURL(blob);
+      coverUrls.set(s.id,url);
+      s.coverUrl=url;
+    }
+  }
+  render();
+}
+
+/* ============ reader ============ */
+function getSeriesForIssue(issue){ return seriesList.find(s=>s.id===issue.seriesId); }
+function nextIssueInSeries(issue){
+  const s=getSeriesForIssue(issue);
+  if(!s) return null;
+  const idx=s.issues.findIndex(i=>i.id===issue.id);
+  return idx>=0&&idx<s.issues.length-1?s.issues[idx+1]:null;
+}
+function prevIssueInSeries(issue){
+  const s=getSeriesForIssue(issue);
+  if(!s) return null;
+  const idx=s.issues.findIndex(i=>i.id===issue.id);
+  return idx>0?s.issues[idx-1]:null;
+}
+
+function isAtReadingEnd(){
+  if(!rTotal) return false;
+  return isRtl()?rPage<=1:rPage>=rTotal;
+}
+
+function markIssueCompletedIfAtEnd(){
+  if(!readerIssue||!rTotal||!isAtReadingEnd()) return;
+  const im=getIssueMeta(readerIssue.id);
+  if(im.status==='completed') return;
+  im.status='completed';
+  im.finishedAt=Date.now();
+  im.readCount=(im.readCount||0)+1;
+  im.progress=100;
+  im.page=isRtl()?1:rTotal;
+  saveMeta();
+}
+
+async function tryOpenNextIssue(){
+  if(!readerIssue) return;
+  markIssueCompletedIfAtEnd();
+  const next=nextIssueInSeries(readerIssue);
+  if(!next){
+    toast('End of series');
+    return;
+  }
+  await openReader(next.id,{focus:rFocus,startAtBeginning:true});
+}
+
+async function tryOpenPrevIssue(){
+  if(!readerIssue) return;
+  const prev=prevIssueInSeries(readerIssue);
+  if(!prev){
+    toast('First issue');
+    return;
+  }
+  await openReader(prev.id,{focus:rFocus});
+}
+
+function isRtl(){ return readerSeries&&seriesReadingDirection(readerSeries.id,readerSeries.name)==='rtl'; }
+
+async function openReader(issueId, opts={}){
+  const issue=seriesList.flatMap(s=>s.issues).find(i=>i.id===issueId);
+  if(!issue) return;
+  readerIssue=issue;
+  readerSeries=getSeriesForIssue(issue);
+  if(opts.startAtBeginning) rPage=1;
+  rSpread=false;
+  rWebtoon=(getSeriesMeta(readerSeries.id).kind==='webtoon')||false;
+  rZoom=1; rFit='width';
+  clearPageCache();
+  readerSession={ issueId };
+  pdfDoc=null;
+
+  const im=getIssueMeta(issue.id);
+  if(!im.startedAt) im.startedAt=Date.now();
+  im.status='reading';
+  im.lastReadAt=Date.now();
+  if(opts.startAtBeginning){
+    im.page=1;
+    im.progress=0;
+  }
+  saveMeta();
+
+  $('#rTitle').textContent=issue.title;
+  $('#rSub').textContent=`${seriesDisplayName(readerSeries)} · ${issue.type.toUpperCase()}`;
+  $('#readerModal').classList.add('open');
+  setReaderFocus(!!opts.focus);
+  syncReaderToggles();
+
+  try{
+    setStatus('Opening issue…',true);
+    const list=await loadPageList(issue);
+    readerSession={ ...readerSession, pageList:list, issueId };
+    rTotal=list.pageCount||0;
+    if(opts.startAtBeginning) rPage=1;
+    else rPage=Math.max(1,Math.min(rTotal, im.page||1));
+    setStatus(directoryHandle?`${seriesList.length} series · ${directoryHandle.name}`:'');
+    if(rWebtoon) await renderWebtoon();
+    else await renderComicPage();
+    updateReaderBar();
+  }catch(e){
+    console.error(e);
+    toast(e.message||'Could not open issue');
+    closeReader();
+  }
+}
+
+function syncReaderToggles(){
+  $('#rSpreadBtn')?.setAttribute('aria-pressed',rSpread?'true':'false');
+  $('#rWebtoonBtn')?.setAttribute('aria-pressed',rWebtoon?'true':'false');
+  $('#rFitW')?.setAttribute('aria-pressed',rFit==='width'?'true':'false');
+  $('#rFitH')?.setAttribute('aria-pressed',rFit==='height'?'true':'false');
+}
+
+function setReaderFocus(on){
+  rFocus=on;
+  $('#readerModal').classList.toggle('focus-mode',on);
+  $('#rFocusBtn')?.setAttribute('aria-pressed',on?'true':'false');
+}
+
+function closeReader(){
+  $('#readerModal').classList.remove('open','focus-mode');
+  clearPageCache();
+  readerSession=null;
+  readerIssue=null;
+  readerSeries=null;
+  pdfDoc=null;
+  $('#rStage').innerHTML='';
+  $('#rWebtoon').innerHTML='';
+  $('#rThumbGrid').classList.remove('open');
+  render();
+}
+
+function persistPageProgress(){
+  if(!readerIssue||!rTotal) return;
+  const im=getIssueMeta(readerIssue.id);
+  if(im.page===rPage&&im.progress===Math.round((rPage/rTotal)*100)) return;
+  im.page=rPage;
+  im.pageCount=rTotal;
+  im.progress=Math.round((rPage/rTotal)*100);
+  im.lastReadAt=Date.now();
+  if(isAtReadingEnd()){
+    if(im.status!=='completed'){
+      im.status='completed';
+      im.finishedAt=Date.now();
+      im.readCount=(im.readCount||0)+1;
+    }
+  }
+  saveMeta();
+}
+
+async function renderComicPage(){
+  $('#rWebtoon').classList.remove('active');
+  $('#rStage').style.display='flex';
+  const stage=$('#rStage');
+  stage.classList.toggle('spread',rSpread);
+  stage.innerHTML='<span style="color:#666">Loading…</span>';
+  const rtl=isRtl();
+  const pagesToLoad=rSpread&&rPage<rTotal?[rPage,rPage+1]:[rPage];
+  const urls=[];
+  for(const p of pagesToLoad) urls.push(await getPageBlob(readerIssue,p));
+  stage.innerHTML='';
+  const order=rtl?urls.slice().reverse():urls;
+  order.forEach((url,i)=>{
+    const img=document.createElement('img');
+    img.src=url;
+    img.alt='Page '+(pagesToLoad[i]||rPage);
+    applyFitToImg(img);
+    stage.appendChild(img);
+  });
+  persistPageProgress();
+}
+
+function applyFitToImg(img){
+  const body=$('#readerBody');
+  const pad=16;
+  if(rFit==='height'){
+    img.style.maxHeight=(body.clientHeight-pad)+'px';
+    img.style.maxWidth='none';
+    img.style.transform=rZoom!==1?`scale(${rZoom})`:'';
+  }else{
+    img.style.maxWidth=(body.clientWidth-pad-(rSpread?body.clientWidth*0.02:0))*rZoom+'px';
+    img.style.maxHeight=(body.clientHeight-pad)+'px';
+    img.style.transform='';
+  }
+}
+
+async function renderWebtoon(){
+  rWebtoon=true;
+  $('#rStage').style.display='none';
+  const wt=$('#rWebtoon');
+  wt.classList.add('active');
+  wt.innerHTML='';
+  setStatus('Loading webtoon…',true);
+  for(let p=1;p<=rTotal;p++){
+    const url=await getPageBlob(readerIssue,p);
+    const img=document.createElement('img');
+    img.src=url;
+    img.loading='lazy';
+    img.dataset.page=p;
+    wt.appendChild(img);
+  }
+  setStatus(directoryHandle?`${seriesList.length} series · ${directoryHandle.name}`:'');
+  wt.onscroll=()=>{
+    const imgs=[...wt.querySelectorAll('img')];
+    let current=1;
+    for(const im of imgs){
+      const rect=im.getBoundingClientRect();
+      if(rect.top<window.innerHeight*0.4) current=parseInt(im.dataset.page,10);
+    }
+    rPage=current;
+    persistPageProgress();
+    updateReaderBar();
+  };
+  const im=getIssueMeta(readerIssue.id);
+  if(im.page>1){
+    const target=wt.querySelector(`img[data-page="${im.page}"]`);
+    target?.scrollIntoView();
+  }
+  updateReaderBar();
+}
+
+function updateReaderBar(){
+  $('#rPage').textContent=rTotal?`${rPage} / ${rTotal}`:'–';
+  const hasNextIssue=!!nextIssueInSeries(readerIssue);
+  const hasPrevIssue=!!prevIssueInSeries(readerIssue);
+  const atEnd=isAtReadingEnd();
+  const atStart=isRtl()?(rPage>=rTotal):(rPage<=1);
+  $('#rPrev').disabled=atStart&&!hasPrevIssue;
+  $('#rNext').disabled=atEnd&&!hasNextIssue;
+  $('#rZoomInd').textContent=Math.round(rZoom*100)+'%';
+}
+
+async function goNextPageOrIssue(){
+  if(!readerIssue) return;
+  if(rWebtoon){
+    const wt=$('#rWebtoon');
+    if(rPage>=rTotal) await tryOpenNextIssue();
+    else{
+      rPage++;
+      wt.querySelector(`img[data-page="${rPage}"]`)?.scrollIntoView({behavior:'smooth',block:'start'});
+      persistPageProgress();
+      updateReaderBar();
+    }
+    return;
+  }
+  const rtl=isRtl();
+  const step=rSpread?2:1;
+  const next=rPage+(rtl?-step:step);
+  if(rtl){
+    if(next<1) await tryOpenNextIssue();
+    else{ rPage=next; await renderComicPage(); updateReaderBar(); }
+  }else if(next>rTotal) await tryOpenNextIssue();
+  else{ rPage=next; await renderComicPage(); updateReaderBar(); }
+}
+
+async function goPrevPageOrIssue(){
+  if(!readerIssue) return;
+  if(rWebtoon){
+    const wt=$('#rWebtoon');
+    if(rPage<=1) await tryOpenPrevIssue();
+    else{
+      rPage--;
+      wt.querySelector(`img[data-page="${rPage}"]`)?.scrollIntoView({behavior:'smooth',block:'start'});
+      persistPageProgress();
+      updateReaderBar();
+    }
+    return;
+  }
+  const rtl=isRtl();
+  const step=rSpread?2:1;
+  const next=rPage+(rtl?step:-step);
+  if(rtl){
+    if(next>rTotal) await tryOpenPrevIssue();
+    else{ rPage=next; await renderComicPage(); updateReaderBar(); }
+  }else if(next<1) await tryOpenPrevIssue();
+  else{ rPage=next; await renderComicPage(); updateReaderBar(); }
+}
+
+/** @deprecated use goNext/goPrev — kept for spread zoom paths */
+async function readerGo(delta){
+  if(delta>0) await goNextPageOrIssue();
+  else await goPrevPageOrIssue();
+}
+
+async function buildThumbGrid(){
+  const grid=$('#rThumbGrid');
+  grid.innerHTML='';
+  grid.classList.add('open');
+  for(let p=1;p<=Math.min(rTotal,120);p++){
+    const btn=document.createElement('button');
+    btn.type='button';
+    if(p===rPage) btn.classList.add('current');
+    const url=await getPageBlob(readerIssue,p);
+    btn.innerHTML=`<img src="${url}" alt="">`;
+    btn.onclick=()=>{ rPage=p; grid.classList.remove('open'); renderComicPage(); updateReaderBar(); };
+    grid.appendChild(btn);
+  }
+}
+
+function openIssueDetail(issueId){
+  const issue=seriesList.flatMap(s=>s.issues).find(i=>i.id===issueId);
+  const s=getSeriesForIssue(issue);
+  if(!issue) return;
+  const m=getIssueMeta(issue.id);
+  $('#detailCard').innerHTML=`
+    <div class="detail-cover"></div>
+    <div class="detail-body">
+      <h2 class="d-title">${esc(issue.title)}</h2>
+      <p style="color:var(--ink-soft);margin:0 0 12px">${esc(seriesDisplayName(s))} · ${issue.type.toUpperCase()}</p>
+      <label style="font-size:13px;color:var(--ink-soft)">Status</label>
+      <select class="select" id="dStatus" style="width:100%;margin:8px 0 12px">
+        ${['unread','reading','completed','on_hold','dropped'].map(st=>`<option value="${st}" ${(m.status||'unread')===st?'selected':''}>${st}</option>`).join('')}
+      </select>
+      <textarea id="dNotes" placeholder="Notes…" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;background:var(--input-bg);color:var(--ink)">${esc(m.notes||'')}</textarea>
+      <div class="d-actions">
+        <button type="button" class="btn primary" id="dRead">Read</button>
+        <button type="button" class="btn ghost" id="dComplete">Mark complete</button>
+        <button type="button" class="btn ghost" id="dReset">Reset progress</button>
+        <button type="button" class="icon-btn" id="dClose">×</button>
+      </div>
+    </div>`;
+  $('#detailModal').classList.add('open');
+  $('#dStatus').onchange=e=>{ m.status=e.target.value; if(m.status==='completed'){ m.progress=100; m.page=m.pageCount||m.page; m.finishedAt=Date.now(); } saveMeta(); };
+  $('#dNotes').oninput=e=>{ m.notes=e.target.value; saveMeta(); };
+  $('#dRead').onclick=()=>{ closeIssueDetail(); openReader(issue.id,{focus:true}); };
+  $('#dComplete').onclick=()=>{ m.status='completed'; m.progress=100; m.finishedAt=Date.now(); saveMeta(); render(); closeIssueDetail(); };
+  $('#dReset').onclick=()=>{ m.page=1; m.progress=0; m.status='unread'; saveMeta(); render(); closeIssueDetail(); toast('Progress reset'); };
+  $('#dClose').onclick=closeIssueDetail;
+}
+function closeIssueDetail(){ $('#detailModal').classList.remove('open'); }
+
+function resetAllProgress(){
+  const n=Object.keys(meta.issues||{}).length;
+  if(!n){ toast('No progress stored yet'); return; }
+  if(!confirm(`Reset reading progress for all ${n} tracked issue${n===1?'':'s'}? Notes, tags, and ratings are kept.`)) return;
+  Object.values(meta.issues).forEach(m=>{
+    m.page=1;
+    m.progress=0;
+    m.pageCount=0;
+    m.status='unread';
+    m.readCount=0;
+    delete m.startedAt;
+    delete m.finishedAt;
+    delete m.lastReadAt;
+  });
+  saveMeta();
+  render();
+  toast('All reading progress reset');
+}
+
+function exportCatalog(){
+  const data={
+    version:1,
+    exported:new Date().toISOString(),
+    folder:directoryHandle?.name||null,
+    series:seriesList.map(s=>({ id:s.id, name:s.name, meta:getSeriesMeta(s.id) })),
+    issues:seriesList.flatMap(s=>s.issues.map(i=>({ id:i.id, seriesId:s.id, relativePath:i.relativePath, meta:getIssueMeta(i.id) }))),
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='panels-catalog.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Exported tracking data');
+}
+
+function importCatalog(file){
+  file.text().then(t=>JSON.parse(t)).then(data=>{
+    let n=0;
+    (data.series||[]).forEach(s=>{ if(s.meta){ meta.series[s.id]=Object.assign(getSeriesMeta(s.id),s.meta); n++; } });
+    (data.issues||[]).forEach(i=>{ if(i.meta){ meta.issues[i.id]=Object.assign(getIssueMeta(i.id),i.meta); n++; } });
+    saveMeta();
+    render();
+    toast(`Merged ${n} records`);
+  }).catch(()=>toast('Invalid JSON'));
+}
+
+function moveIssueOrder(seriesId, issueId, direction){
+  const s=seriesList.find(x=>x.id===seriesId);
+  if(!s) return;
+  const sm=getSeriesMeta(seriesId);
+  let order=sm.issueOrder?.length?sm.issueOrder.slice():s.issues.map(i=>i.id);
+  const idx=order.indexOf(issueId);
+  if(idx<0){ order=s.issues.map(i=>i.id); const j=order.indexOf(issueId); if(j<0) return; }
+  const i=order.indexOf(issueId);
+  const ni=i+direction;
+  if(ni<0||ni>=order.length) return;
+  [order[i],order[ni]]=[order[ni],order[i]];
+  sm.issueOrder=order;
+  saveMeta();
+  s.issues.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+  render();
+}
+
+let io;
+function observeReveals(){
+  if(io) io.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.08});
+  document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el));
+}
+
+/* ============ session folder fallback ============ */
+async function addSessionFiles(fileList, forcedMode){
+  const files=[...fileList];
+  let mode=forcedMode;
+  if(!mode){
+    const hasNested=files.some(f=>{
+      const parts=(f.webkitRelativePath||f.name).replace(/\\/g,'/').split('/').filter(Boolean);
+      return parts.length>=2;
+    });
+    mode=hasNested?'library':'series';
+  }
+  openMode=mode;
+  saveOpenMode();
+
+  if(mode==='series'){
+    const seriesId='Session';
+    const sm=getSeriesMeta(seriesId);
+    if(!sm.displayName) sm.displayName='This series';
+    const issues=[];
+    for(const file of files){
+      const rel=file.webkitRelativePath||file.name;
+      const parts=rel.replace(/\\/g,'/').split('/').filter(Boolean);
+      const type=detectFileType(file.name);
+      if(!type||type==='image') continue;
+      const issueRel=parts.length>=2?parts.slice(1).join('/'):parts[0];
+      if(!issueRel) continue;
+      issues.push({
+        id:issueId(seriesId,issueRel,file.size),
+        seriesId, relativePath:issueRel, name:parts[parts.length-1], title:parseIssueTitle(file.name),
+        type, size:file.size, lastModified:file.lastModified,
+        fileHandle:null, albumHandle:null, sessionFile:file,
+      });
+    }
+    if(!issues.length){ toast('No archive/PDF files in folder.'); return; }
+    seriesList=[{ id:seriesId, name:seriesId, dirHandle:null, issues:sortIssues(issues,seriesId) }];
+    view='series';
+    activeSeriesId=seriesId;
+    directoryHandle=null;
+    document.body.classList.add('has-library');
+    setStatus(`${issues.length} issues (session — use Open series to persist)`);
+    toast('Loaded series (session)');
+    render();
+    hydrateCoversInBackground();
+    return;
+  }
+
+  const bySeries=new Map();
+  for(const file of files){
+    const rel=file.webkitRelativePath||file.name;
+    const parts=rel.replace(/\\/g,'/').split('/').filter(Boolean);
+    if(parts.length<2) continue;
+    const seriesId=parts[0];
+    if(!bySeries.has(seriesId)) bySeries.set(seriesId,{ name:seriesId, issues:[] });
+    const type=detectFileType(file.name);
+    if(!type||type==='image') continue;
+    const issueRel=parts.slice(1).join('/');
+    bySeries.get(seriesId).issues.push({
+      id:issueId(seriesId,issueRel,file.size),
+      seriesId, relativePath:issueRel, name:parts[parts.length-1], title:parseIssueTitle(file.name),
+      type, size:file.size, lastModified:file.lastModified,
+      fileHandle:null, albumHandle:null, sessionFile:file,
+    });
+  }
+  if(!bySeries.size){ toast('Use library layout: SeriesName/issue.cbz'); return; }
+  seriesList=[...bySeries.values()].map(s=>({ ...s, issues:sortIssues(s.issues,s.id), dirHandle:null }));
+  seriesList.sort((a,b)=>naturalCompare(a.name,b.name));
+  view='library';
+  activeSeriesId=null;
+  document.body.classList.add('has-library');
+  setStatus(`${seriesList.length} series (session — re-open folder after refresh)`);
+  toast('Loaded session library');
+  render();
+  hydrateCoversInBackground();
+}
+
+/* ============ events ============ */
+$('#themeToggle').onclick=toggleUiTheme;
+$('#openBtn').onclick=selectDirectory;
+$('#openSeriesBtn').onclick=selectSeriesFolder;
+$('#refreshBtn').onclick=()=>directoryHandle?scanLibrary(true):(openMode==='series'?selectSeriesFolder():selectDirectory());
+$('#exportBtn').onclick=exportCatalog;
+$('#resetProgressBtn').onclick=resetAllProgress;
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=e=>{ if(e.target.files[0]) importCatalog(e.target.files[0]); e.target.value=''; };
+$('#folderFallback').onchange=e=>{ if(e.target.files?.length) addSessionFiles([...e.target.files],'library'); e.target.value=''; };
+$('#seriesFolderFallback').onchange=e=>{ if(e.target.files?.length) addSessionFiles([...e.target.files],'series'); e.target.value=''; };
+$('#brandHome').onclick=e=>{
+  e.preventDefault();
+  if(openMode==='series'&&seriesList.length===1){
+    view='series';
+    activeSeriesId=seriesList[0].id;
+  }else{
+    view='library';
+    activeSeriesId=null;
+  }
+  render();
+};
+$('#filterChips').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return; filter=c.dataset.f; render(); };
+$('#sortSelect').onchange=e=>{ sortKey=e.target.value; render(); };
+const si=$('#searchInput');
+si.oninput=()=>{ $('#searchBox').classList.toggle('has',!!si.value); query=si.value; render(); };
+$('#searchClear').onclick=()=>{ si.value=''; query=''; $('#searchBox').classList.remove('has'); render(); si.focus(); };
+
+$('#rClose').onclick=closeReader;
+$('#rFocusBtn').onclick=()=>setReaderFocus(!rFocus);
+$('#rPrev').onclick=()=>{ void goPrevPageOrIssue(); };
+$('#rNext').onclick=()=>{ void goNextPageOrIssue(); };
+$('#rEdgePrev').onclick=()=>{ void goPrevPageOrIssue(); };
+$('#rEdgeNext').onclick=()=>{ void goNextPageOrIssue(); };
+$('#rSpreadBtn').onclick=()=>{ rSpread=!rSpread; rWebtoon=false; syncReaderToggles(); renderComicPage(); };
+$('#rWebtoonBtn').onclick=async()=>{ rWebtoon=!rWebtoon; syncReaderToggles(); if(rWebtoon) await renderWebtoon(); else await renderComicPage(); };
+$('#rZoomIn').onclick=()=>{ rZoom=Math.min(3,rZoom+0.1); if(!rWebtoon) renderComicPage(); };
+$('#rZoomOut').onclick=()=>{ rZoom=Math.max(0.5,rZoom-0.1); if(!rWebtoon) renderComicPage(); };
+$('#rFitW').onclick=()=>{ rFit='width'; rZoom=1; syncReaderToggles(); if(!rWebtoon) renderComicPage(); };
+$('#rFitH').onclick=()=>{ rFit='height'; syncReaderToggles(); if(!rWebtoon) renderComicPage(); };
+$('#rThumbBtn').onclick=()=>buildThumbGrid();
+$('#detailModal').querySelector('.detail').onclick=e=>{ if(e.target.classList.contains('detail')) closeIssueDetail(); };
+
+document.addEventListener('keydown',e=>{
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
+  if($('#readerModal').classList.contains('open')&&!typing){
+    if(e.key==='Escape'){
+      if($('#rThumbGrid').classList.contains('open')) $('#rThumbGrid').classList.remove('open');
+      else if(rFocus) setReaderFocus(false);
+      else closeReader();
+    }else if(e.key==='f'||e.key==='F'){ e.preventDefault(); setReaderFocus(!rFocus); }
+    else if(e.key==='g'||e.key==='G'){ e.preventDefault(); buildThumbGrid(); }
+    else if(e.key==='w'||e.key==='W'){ e.preventDefault(); rFit='width'; syncReaderToggles(); if(!rWebtoon) renderComicPage(); }
+    else if(e.key==='p'||e.key==='P'){ e.preventDefault(); rFit='height'; syncReaderToggles(); if(!rWebtoon) renderComicPage(); }
+    else if(e.key==='ArrowLeft'){ e.preventDefault(); void goPrevPageOrIssue(); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); void goNextPageOrIssue(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); void tryOpenPrevIssue(); }
+    else if(e.key==='ArrowDown'){ e.preventDefault(); void tryOpenNextIssue(); }
+  }else if($('#detailModal').classList.contains('open')&&e.key==='Escape') closeIssueDetail();
+});
+
+let dragDepth=0;
+window.addEventListener('dragenter',e=>{ e.preventDefault(); dragDepth++; $('#dropOverlay').classList.add('show'); });
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('dragleave',()=>{ if(--dragDepth<=0){ dragDepth=0; $('#dropOverlay').classList.remove('show'); } });
+window.addEventListener('drop',e=>{ e.preventDefault(); dragDepth=0; $('#dropOverlay').classList.remove('show'); if(e.dataTransfer.files?.length) addSessionFiles([...e.dataTransfer.files]); });
+
+loadUiTheme();
+loadOpenMode();
+loadMeta();
+render();
+observeReveals();
+tryRestoreDirectory();
+</script>
+</body>
+</html>
